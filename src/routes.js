@@ -1,6 +1,6 @@
 const express = require('express')
 const router = new express.Router()
-const upload = require('./map-multer')
+const upload = require('./shared/map-multer')
 const { parse } = require('./shared/tile-layers-parser')
 const {
     getAssets,

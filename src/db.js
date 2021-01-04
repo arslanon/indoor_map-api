@@ -186,6 +186,14 @@ updateMapMeterMarker = async (mapId, meterId, {x, y}) => {
                 updatedAt: new Date().toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })
             })
             .write()
+
+        await db.get('meters')
+            .find({ id: meterId })
+            .assign({
+                mapId,
+                updatedAt: new Date().toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })
+            })
+            .write()
     }
 
     return editedMarker;
