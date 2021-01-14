@@ -1,6 +1,10 @@
 
 const sharp = require('sharp');
 const fs = require('fs');
+const { promisify } = require('util')
+
+// To delete temp file after used
+const unlinkAsync = promisify(fs.unlink)
 
 const rootPath = `./uploads/maps`
 
@@ -99,6 +103,9 @@ module.exports = {
         //     // double size for each consecutive zoom level, starting at min size:
         //     pixelSize = minTileSize * 2**zoom;
         // }
+
+        // Delete temp file
+        await unlinkAsync(imagePath);
 
         return {
             path: `/uploads/maps/${folderName}`,
