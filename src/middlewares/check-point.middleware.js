@@ -9,7 +9,7 @@ const {
 } = require('../services/check-point.service');
 
 module.exports = {
-    setMap: catchAsync(async (req, res, next) => {
+    setCheckPoint: catchAsync(async (req, res, next) => {
         req.checkPoint = await findCheckPointById(req.params.id);
         if (!req.checkPoint) return next(new AppError('error.notFound.checkPoint', 404));
         next();
