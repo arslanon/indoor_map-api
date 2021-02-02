@@ -20,5 +20,6 @@ const fileFilter = (req, file, cb) => {
 
 module.exports = {
     uploadSingleImage: multer({ storage: storage, fileFilter: fileFilter })
-        .single('image')
+        .single('image'),
+    uploadCSVFile: multer({ storage: storage}).single('csv')
 }

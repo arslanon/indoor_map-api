@@ -14,6 +14,8 @@ const {
     removeCheckPointFromMap
 } = require("../services/map.service");
 const { AppError } = require("../common/error");
+const {parse} = require('../shared/csv.parser')
+
 
 /**
  * Get all CheckPoints
@@ -78,6 +80,30 @@ const createCheckPoint = async ({name, macAddress, assetId, mapId}) => {
     if(map) await addCheckPointIntoMap(map, checkPoint);
 
     return checkPoint;
+}
+
+const createCheckPointWithCSV = async ({assetId, mapId}, {path}) => {
+    const asset = await findAssetById(assetId);
+    const map = await findMapByIdAndAssetId(mapId, asset?._id);
+    const checkPoints = await parse(path)
+
+    checkPoints.forEach(cp => {
+        Object.assign(cp, { map: map, asset: asset });
+    })
+
+    return new Promise(async (resolve, reject)=> {
+        await CheckPointModel.insertMany(checkPoints, {
+            ordered: false,
+        }, (error, docs) => {
+            if(error) {
+                reject(error)
+            } else {
+                resolve(docs)
+            }
+        })
+    }).catch((e) => {
+        throw new AppError(e, 404, true)
+    })
 }
 
 /**
@@ -191,6 +217,7 @@ module.exports = {
     findCheckPointById,
     findCheckPointByIdWithThrow,
     createCheckPoint,
+    createCheckPointWithCSV,
     updateCheckPoint,
     updateCheckPointPosition,
     deleteCheckPoint,
