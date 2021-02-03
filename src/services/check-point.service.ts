@@ -1,4 +1,3 @@
-
 import {Asset} from '../models/asset.model';
 import {Map} from '../models/map.model';
 import CheckPointDoc, {CheckPoint} from '../models/check-point.model';
@@ -15,6 +14,8 @@ import {
 
 import {AppError} from '../common/error';
 import {CheckPointSub} from '../models/_sub.model';
+
+import csvParser from '../shared/csv.parser'
 
 /**
  * Get all CheckPoints
@@ -88,6 +89,34 @@ export async function createCheckPoint(
   if (map) await addCheckPointIntoMap(map._id, checkPoint);
 
   return checkPoint;
+}
+
+export async function createCheckPointWithCSV(
+    path: string,
+    assetId?: string,
+    mapId?: string,
+) {
+  const asset = assetId ? await findAssetById(assetId): null;
+  const map = mapId ? await findMapByIdAndAssetId(mapId, asset?._id) : null;
+  const checkPoints = await csvParser(path);
+
+  checkPoints.forEach((cp: any) => {
+      Object.assign(cp, {map: map, asset: asset});
+  })
+
+  return new Promise(async (resolve, reject)=> {
+    await CheckPointDoc.insertMany(checkPoints, {
+      ordered: false,
+    }, (error, docs) => {
+      if(error) {
+        reject(error)
+      } else {
+        resolve(docs)
+      }
+    })
+  }).catch((e) => {
+    throw new AppError(e, 404, true)
+  })
 }
 
 /**
