@@ -3,10 +3,10 @@ import csv from 'csv-parser';
 
 import AppError from '../common/error/models/app-error.model';
 
-export default async function (
+export default async function <T> (
     path: string
-): Promise<any> {
-    let datas: Array<any> = [];
+): Promise<T[]> {
+    let datas: Array<T[]> = [];
 
     // @ts-ignore
     return new Promise((resolve)=> {

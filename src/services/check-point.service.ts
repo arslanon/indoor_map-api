@@ -16,6 +16,8 @@ import {AppError} from '../common/error';
 import {CheckPointSub} from '../models/_sub.model';
 
 import csvParser from '../shared/csv.parser'
+import {CsvParser} from "csv-parser";
+import {CallbackError} from "mongoose";
 
 /**
  * Get all CheckPoints
@@ -95,16 +97,19 @@ export async function createCheckPointWithCSV(
     path: string,
     assetId?: string,
     mapId?: string,
-) {
+): Promise<CheckPoint[]> {
   const asset = assetId ? await findAssetById(assetId): null;
   const map = mapId ? await findMapByIdAndAssetId(mapId, asset?._id) : null;
-  const checkPoints = await csvParser(path);
+  const checkPoints = await csvParser<CheckPoint>(path);
 
-  checkPoints.forEach((cp: any) => {
-      Object.assign(cp, {map: map, asset: asset});
-  })
+  for (const cp of checkPoints) {
+    Object.assign(cp, {map: map, asset: asset});
+    if (asset) await addCheckPointIntoAsset(asset._id, cp);
+    if (map) await addCheckPointIntoMap(map._id, cp);
+  }
 
-  return new Promise(async (resolve, reject)=> {
+  // @ts-ignore
+  return new Promise(async (resolve, reject) => {
     await CheckPointDoc.insertMany(checkPoints, {
       ordered: false,
     }, (error, docs) => {

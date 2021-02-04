@@ -6,7 +6,7 @@ import {
 import {
     findCheckPointsByMap,
     createCheckPointWithCSV
-} from '../services/check-point.service';
+} from '../services';
 import { setCheckPoint } from '../middlewares/check-point.middleware'
 import { uploadCSVFile } from '../middlewares/upload-image.middleware'
 const checkPointRouter = Router();

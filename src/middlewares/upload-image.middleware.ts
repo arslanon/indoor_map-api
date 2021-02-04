@@ -32,5 +32,5 @@ export const uploadSingleImage =
       .single('image');
 
 export const uploadCSVFile =
-  multer({storage: storage,})
+  multer({storage: storage})
       .single('csv')
