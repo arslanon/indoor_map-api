@@ -14,7 +14,7 @@ describe('Check Point CRUD API', () => {
 
     it('POST /api/checkPoint/csv - create a check points with csv', async (done) => {
 
-        const filePath = `files/demo.csv`;
+        const filePath = `files/checkpoints.csv`;
         if(! (await fs.exists(filePath))) throw new Error('file does not exists!');
 
         const asset = await AssetDoc.findOne({name: 'Asset1'});

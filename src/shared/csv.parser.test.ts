@@ -6,9 +6,9 @@ describe('CSV File Parsing', () => {
 
     it('Parse an csv data', async (done) => {
 
-        expect(fs.existsSync(`files/demo.csv`)).toBeTruthy();
-        await fs.copyFile(`files/demo.csv`, `tmp/uploads/demo.csv`, () => {});
-        const res = await csvParser<CheckPoint>(`tmp/uploads/demo.csv`)
+        expect(fs.existsSync(`files/checkpoints.csv`)).toBeTruthy();
+        await fs.copyFile(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`, () => {});
+        const res = await csvParser<CheckPoint>(`tmp/uploads/checkpoints.csv`)
 
         expect(res).toHaveLength(3);
         const [first, second, third] = res;
@@ -19,7 +19,7 @@ describe('CSV File Parsing', () => {
         expect(third!.name).toBeTruthy();
 
         // Delete temp file
-        await fs.rmdirSync(`tmp/uploads/demo.csv`, { recursive: true });
+        await fs.rmdirSync(`tmp/uploads/checkpoints.csv`, { recursive: true });
 
         done();
     });

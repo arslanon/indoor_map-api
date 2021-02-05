@@ -16,8 +16,6 @@ import {AppError} from '../common/error';
 import {CheckPointSub} from '../models/_sub.model';
 
 import csvParser from '../shared/csv.parser'
-import {CsvParser} from "csv-parser";
-import {CallbackError} from "mongoose";
 
 /**
  * Get all CheckPoints
@@ -49,6 +47,22 @@ export async function findCheckPointById(id: string) {
         map: 1,
         x: 1,
         y: 1,
+      });
+}
+
+/**
+ * Get CheckPoint by id
+ * @return {Promise<CheckPoint | null>}
+ * @param macAddress
+ */
+export async function findCheckPointByMacAddress(macAddress: string) {
+  return CheckPointDoc.findOne({macAddress: macAddress})
+      .select({
+        _id: 1,
+        name: 1,
+        macAddress: 1,
+        asset: 1,
+        map: 1,
       });
 }
 
@@ -89,7 +103,6 @@ export async function createCheckPoint(
 
   if (asset) await addCheckPointIntoAsset(asset._id, checkPoint);
   if (map) await addCheckPointIntoMap(map._id, checkPoint);
-
   return checkPoint;
 }
 
@@ -100,28 +113,57 @@ export async function createCheckPointWithCSV(
 ): Promise<CheckPoint[]> {
   const asset = assetId ? await findAssetById(assetId): null;
   const map = mapId ? await findMapByIdAndAssetId(mapId, asset?._id) : null;
-  const checkPoints = await csvParser<CheckPoint>(path);
+  const checkPoints = await csvParser<CheckPoint>(path)
+  let updateDocuments: CheckPoint[] = [];
+  let insertDocuments: CheckPoint[] = [];
 
   for (const cp of checkPoints) {
-    Object.assign(cp, {map: map, asset: asset});
-    if (asset) await addCheckPointIntoAsset(asset._id, cp);
-    if (map) await addCheckPointIntoMap(map._id, cp);
+      const oldCheckPoint = await findCheckPointByMacAddress(cp.macAddress);
+
+      if(oldCheckPoint) {
+        // @ts-ignore
+        const updatedCheckPoint = await CheckPointDoc.findOneAndUpdate(
+          {macAddress: oldCheckPoint.macAddress},
+          {
+            name: cp.name,
+            'asset': asset,
+            'map': map
+          },
+          {new: true}
+        )
+        // @ts-ignore
+        updateDocuments.push(updatedCheckPoint)
+      } else {
+        Object.assign(cp, {map: map, asset: asset});
+        insertDocuments.push(cp)
+      }
   }
 
-  // @ts-ignore
-  return new Promise(async (resolve, reject) => {
-    await CheckPointDoc.insertMany(checkPoints, {
-      ordered: false,
-    }, (error, docs) => {
-      if(error) {
-        reject(error)
-      } else {
-        resolve(docs)
-      }
+  if(insertDocuments.length) {
+    // @ts-ignore
+    return new Promise(async (resolve, reject) => {
+      CheckPointDoc.insertMany(insertDocuments, {
+        ordered: false,
+      }, async (error, docs) => {
+        if (error) {
+          reject(error);
+        } else {
+          if (asset) {
+            // @ts-ignore
+            for (const cp of docs) {
+              if (asset) await addCheckPointIntoAsset(asset._id, cp);
+              if (map) await addCheckPointIntoMap(map._id, cp);
+            }
+          }
+          resolve([...docs, ...updateDocuments]);
+        }
+      })
+    }).catch((e) => {
+      throw new AppError(e, 404, true)
     })
-  }).catch((e) => {
-    throw new AppError(e, 404, true)
-  })
+  } else {
+    return updateDocuments;
+  }
 }
 
 /**
