@@ -30,3 +30,7 @@ const fileFilter = (
 export const uploadSingleImage =
   multer({storage: storage, fileFilter: fileFilter})
       .single('image');
+
+export const uploadCSVFile =
+  multer({storage: storage})
+      .single('csv')
