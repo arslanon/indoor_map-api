@@ -10,9 +10,9 @@ import {
   updateCheckPoint,
   updateCheckPointPosition,
   deleteCheckPoint,
-  createCheckPointWithCSV
-} from './check-point.service';
-import fs from "fs";
+  upsertCheckPointWithCSV
+} from '../services';
+import fs from 'fs';
 
 describe('CheckPoint CRUD Service', () => {
   setupTestDatabase('indoorMap-testDb-checkPoint', ['checkPoint']);
@@ -227,7 +227,7 @@ describe('CheckPoint CRUD Service', () => {
     expect(map).toBeTruthy();
     await fs.copyFile(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`, () => {});
 
-    const checkPoints: CheckPoint[] = await createCheckPointWithCSV(
+    const checkPoints: CheckPoint[] = await upsertCheckPointWithCSV(
         'tmp/uploads/checkpoints.csv',
         asset!._id,
         map!._id
@@ -267,7 +267,7 @@ describe('CheckPoint CRUD Service', () => {
 
     await fs.copyFile(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`, () => {});
 
-    const checkPoints: CheckPoint[] = await createCheckPointWithCSV(
+    const checkPoints: CheckPoint[] = await upsertCheckPointWithCSV(
         'tmp/uploads/checkpoints.csv',
         asset!._id,
         undefined
@@ -307,7 +307,7 @@ describe('CheckPoint CRUD Service', () => {
 
     await fs.copyFile(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`, () => {});
 
-    const checkPoints: CheckPoint[] = await createCheckPointWithCSV(
+    const checkPoints: CheckPoint[] = await upsertCheckPointWithCSV(
         'tmp/uploads/checkpoints.csv',
         undefined,
         map!._id
@@ -341,7 +341,7 @@ describe('CheckPoint CRUD Service', () => {
 
     await fs.copyFile(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`, () => {});
 
-    const checkPoints: CheckPoint[] = await createCheckPointWithCSV(
+    const checkPoints: CheckPoint[] = await upsertCheckPointWithCSV(
         'tmp/uploads/checkpoints.csv',
         undefined,
         undefined
@@ -385,7 +385,7 @@ describe('CheckPoint CRUD Service', () => {
 
     await fs.copyFile(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`, () => {});
 
-    const checkPoints: CheckPoint[] = await createCheckPointWithCSV(
+    const checkPoints: CheckPoint[] = await upsertCheckPointWithCSV(
         'tmp/uploads/checkpoints.csv',
         undefined,
         undefined
@@ -428,7 +428,7 @@ describe('CheckPoint CRUD Service', () => {
     expect(map2).toBeTruthy();
 
     // @ts-ignore
-    const checkPoints: CheckPoint[] = await createCheckPointWithCSV(
+    const checkPoints: CheckPoint[] = await upsertCheckPointWithCSV(
         'tmp/uploads/checkpoints.csv',
         asset1!._id,
         map2!._id,

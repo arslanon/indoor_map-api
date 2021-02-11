@@ -5,7 +5,7 @@ import {
 } from '../common/error';
 import {
   findCheckPointById,
-} from '../services/check-point.service';
+} from '../services';
 import {Request, Response, NextFunction} from 'express';
 
 export const setCheckPoint = catchAsync(

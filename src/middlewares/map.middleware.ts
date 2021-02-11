@@ -5,7 +5,7 @@ import {
 } from '../common/error';
 import {
   findMapById,
-} from '../services/map.service';
+} from '../services';
 import {Request, Response, NextFunction} from 'express';
 
 export const setMap = catchAsync(

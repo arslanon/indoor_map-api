@@ -5,7 +5,7 @@ import {
 } from '../common/error';
 import {
   findAssetById,
-} from '../services/asset.service';
+} from '../services';
 import {Request, Response, NextFunction} from 'express';
 
 export const setAsset = catchAsync(

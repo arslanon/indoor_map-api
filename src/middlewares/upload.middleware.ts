@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = (
+const imageFilter = (
     req: Express.Request,
     file: Express.Multer.File,
     cb: (error: null, acceptFile: boolean) => void) => {
@@ -28,9 +28,9 @@ const fileFilter = (
 };
 
 export const uploadSingleImage =
-  multer({storage: storage, fileFilter: fileFilter})
+  multer({storage: storage, fileFilter: imageFilter})
       .single('image');
 
 export const uploadCSVFile =
   multer({storage: storage})
-      .single('csv')
+      .single('csv');

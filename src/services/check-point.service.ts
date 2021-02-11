@@ -2,34 +2,51 @@ import {Asset} from '../models/asset.model';
 import {Map} from '../models/map.model';
 import CheckPointDoc, {CheckPoint} from '../models/check-point.model';
 import {
-  findAssetById,
+  findAssetByIdWithThrow,
   addCheckPointIntoAsset,
   updateCheckPointInAsset,
   removeCheckPointFromAsset,
-  findMapByIdAndAssetId,
+  findMapByIdAndAssetIdWithThrow,
   addCheckPointIntoMap,
   updateCheckPointInMap,
-  removeCheckPointFromMap,
+  removeCheckPointFromMap
 } from './';
-
 import {AppError} from '../common/error';
 import {CheckPointSub} from '../models/_sub.model';
-
-import csvParser from '../shared/csv.parser'
+import csvParser from '../shared/csv.parser';
 
 /**
- * Get all CheckPoints
+ * Get all CheckPoints by map
  * @param {string} mapId
  * @return {Promise<CheckPoint[]>}
  */
 export async function findCheckPointsByMap(mapId: string) {
-  return CheckPointDoc.find({'map._id': mapId}).select({
-    _id: 1,
-    name: 1,
-    macAddress: 1,
-    x: 1,
-    y: 1,
-  });
+  return CheckPointDoc.find({'map._id': mapId})
+      .select({
+        _id: 1,
+        name: 1,
+        macAddress: 1,
+        x: 1,
+        y: 1,
+      })
+      .lean<CheckPoint[]>();
+}
+
+/**
+ * Get all CheckPoints by asset
+ * @param {string} assetId
+ * @return {Promise<CheckPoint[]>}
+ */
+export async function findCheckPointsByAsset(assetId: string) {
+  return CheckPointDoc.find({'asset._id': assetId})
+      .select({
+        _id: 1,
+        name: 1,
+        macAddress: 1,
+        x: 1,
+        y: 1,
+      })
+      .lean<CheckPoint[]>();
 }
 
 /**
@@ -47,23 +64,36 @@ export async function findCheckPointById(id: string) {
         map: 1,
         x: 1,
         y: 1,
-      });
+      })
+      .lean<CheckPoint>();
 }
 
 /**
- * Get CheckPoint by id
+ * Get CheckPoint by mac address
  * @return {Promise<CheckPoint | null>}
- * @param macAddress
+ * @param {string} macAddress
  */
 export async function findCheckPointByMacAddress(macAddress: string) {
-  return CheckPointDoc.findOne({macAddress: macAddress})
+  return CheckPointDoc.findOne({macAddress})
       .select({
         _id: 1,
         name: 1,
         macAddress: 1,
         asset: 1,
         map: 1,
-      });
+        x: 1,
+        y: 1,
+      })
+      .lean<CheckPoint>();
+}
+
+/**
+ * Exists CheckPoint by mac address
+ * @return {Promise<boolean>}
+ * @param {string} macAddress
+ */
+export async function existsCheckPointByMacAddress(macAddress: string) {
+  return CheckPointDoc.exists({macAddress});
 }
 
 /**
@@ -93,8 +123,8 @@ export async function createCheckPoint(
     macAddress: string,
     assetId?: string,
     mapId?: string) {
-  const asset = assetId ? await findAssetById(assetId) : null;
-  const map = mapId ? await findMapByIdAndAssetId(mapId, asset?._id) : null;
+  const asset = assetId ? await findAssetByIdWithThrow(assetId) : null;
+  const map = mapId ? await findMapByIdAndAssetIdWithThrow(mapId, asset?._id) : null;
 
   const checkPoint: CheckPoint = new CheckPointDoc(
       {name, macAddress, asset, map},
@@ -104,66 +134,6 @@ export async function createCheckPoint(
   if (asset) await addCheckPointIntoAsset(asset._id, checkPoint);
   if (map) await addCheckPointIntoMap(map._id, checkPoint);
   return checkPoint;
-}
-
-export async function createCheckPointWithCSV(
-    path: string,
-    assetId?: string,
-    mapId?: string,
-): Promise<CheckPoint[]> {
-  const asset = assetId ? await findAssetById(assetId): null;
-  const map = mapId ? await findMapByIdAndAssetId(mapId, asset?._id) : null;
-  const checkPoints = await csvParser<CheckPoint>(path)
-  let updateDocuments: CheckPoint[] = [];
-  let insertDocuments: CheckPoint[] = [];
-
-  for (const cp of checkPoints) {
-      const oldCheckPoint = await findCheckPointByMacAddress(cp.macAddress);
-
-      if(oldCheckPoint) {
-        // @ts-ignore
-        const updatedCheckPoint = await CheckPointDoc.findOneAndUpdate(
-          {macAddress: oldCheckPoint.macAddress},
-          {
-            name: cp.name,
-            'asset': asset,
-            'map': map
-          },
-          {new: true}
-        )
-        // @ts-ignore
-        updateDocuments.push(updatedCheckPoint)
-      } else {
-        Object.assign(cp, {map: map, asset: asset});
-        insertDocuments.push(cp)
-      }
-  }
-
-  if(insertDocuments.length) {
-    // @ts-ignore
-    return new Promise(async (resolve, reject) => {
-      CheckPointDoc.insertMany(insertDocuments, {
-        ordered: false,
-      }, async (error, docs) => {
-        if (error) {
-          reject(error);
-        } else {
-          if (asset) {
-            // @ts-ignore
-            for (const cp of docs) {
-              if (asset) await addCheckPointIntoAsset(asset._id, cp);
-              if (map) await addCheckPointIntoMap(map._id, cp);
-            }
-          }
-          resolve([...docs, ...updateDocuments]);
-        }
-      })
-    }).catch((e) => {
-      throw new AppError(e, 404, true)
-    })
-  } else {
-    return updateDocuments;
-  }
 }
 
 /**
@@ -183,31 +153,35 @@ export async function updateCheckPoint(
     id: string,
     name: string,
     macAddress: string,
-    assetId?: string, mapId?: string) {
+    assetId?: string,
+    mapId?: string) {
   const checkPoint: CheckPoint = await findCheckPointByIdWithThrow(id);
-  const asset: Asset | null = assetId ? await findAssetById(assetId) : null;
-  const map: Map | null = mapId ?
-    await findMapByIdAndAssetId(mapId, asset?._id) : null;
+  const asset: Asset | null = assetId ? await findAssetByIdWithThrow(assetId) : null;
+  const map: Map | null = mapId ? await findMapByIdAndAssetIdWithThrow(mapId, asset?._id) : null;
 
   const position = {
     x: checkPoint.x,
     y: checkPoint.y,
   };
 
-  if (map && ! checkPoint.map?.equals(map)) {
+  if (map && ! checkPoint.map?._id.equals(map._id)) {
     position.x = undefined;
     position.y = undefined;
   }
 
   const checkPointUpdated: CheckPoint | null =
-    await CheckPointDoc.findOneAndUpdate({_id: id}, {
-      name,
-      macAddress,
-      asset: asset || undefined,
-      map: map || undefined,
-      x: position.x,
-      y: position.y,
-    }, {new: true});
+    await CheckPointDoc.findOneAndUpdate(
+        {_id: id},
+        {
+          name,
+          macAddress,
+          asset: asset || undefined,
+          map: map || undefined,
+          x: position.x,
+          y: position.y,
+        },
+        {new: true}
+    ).lean<CheckPoint>();
 
   if (! checkPointUpdated) {
     throw new AppError('error.notFound.checkPoint', 404);
@@ -215,7 +189,7 @@ export async function updateCheckPoint(
 
   if (checkPoint.asset) {
     if (checkPointUpdated.asset) {
-      if (checkPointUpdated.asset.equals(checkPoint.asset)) {
+      if (checkPointUpdated.asset._id.equals(checkPoint.asset._id)) {
         await updateCheckPointInAsset(
             checkPointUpdated.asset._id, checkPointUpdated,
         );
@@ -240,7 +214,7 @@ export async function updateCheckPoint(
 
   if (checkPoint.map) {
     if (checkPointUpdated.map) {
-      if (checkPointUpdated.map.equals(checkPoint.map)) {
+      if (checkPointUpdated.map._id.equals(checkPoint.map._id)) {
         await updateCheckPointInMap(
             checkPointUpdated.map._id, checkPointUpdated,
         );
@@ -267,6 +241,57 @@ export async function updateCheckPoint(
 }
 
 /**
+ * Create/Update CheckPoints via csv
+ * TODO Need transaction
+ * @param {string} path
+ * @param {string} assetId?
+ * @param {string} mapId?
+ * @return {Promise<CheckPoint[]>}
+ */
+export async function upsertCheckPointWithCSV(
+    path: string,
+    assetId?: string,
+    mapId?: string,
+): Promise<CheckPoint[]> {
+  const checkPoints = await csvParser<CheckPoint>(path);
+
+  const returnedCheckPoints: CheckPoint[] = [];
+  const newCheckPoints: CheckPoint[] = [];
+
+  for (const checkPoint of checkPoints) {
+    const checkPointExisted =
+      await findCheckPointByMacAddress(checkPoint.macAddress);
+
+    if (checkPointExisted) {
+      const checkPointUpdated = await updateCheckPoint(
+          checkPointExisted._id,
+          checkPoint.name,
+          checkPoint.macAddress,
+          assetId,
+          mapId,
+      );
+
+      if (checkPointUpdated) returnedCheckPoints.push(checkPointUpdated);
+    } else {
+      newCheckPoints.push(checkPoint);
+    }
+  }
+
+  for (const checkPoint of newCheckPoints) {
+    const checkPointNew = await createCheckPoint(
+        checkPoint.name,
+        checkPoint.macAddress,
+        assetId,
+        mapId,
+    );
+
+    returnedCheckPoints.push(checkPointNew);
+  }
+
+  return returnedCheckPoints;
+}
+
+/**
  * Update a CheckPoint position only
  * @param {string} id
  * @param {number} x
@@ -277,10 +302,14 @@ export async function updateCheckPointPosition(
     id: string,
     x: number,
     y: number) {
-  return CheckPointDoc.findOneAndUpdate({_id: id}, {
-    x,
-    y,
-  }, {new: true});
+  return CheckPointDoc.findOneAndUpdate(
+      {_id: id},
+      {
+        x,
+        y,
+      },
+      {new: true}
+  ).lean<CheckPoint>();
 }
 
 /**

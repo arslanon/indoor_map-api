@@ -9,7 +9,7 @@ import fs from 'mz/fs';
 const request = supertest(app);
 
 describe('Map CRUD API / Image Layer Parsing', () => {
-  setupTestDatabase('indoorMap-testDb-asset', ['map']);
+  setupTestDatabase('indoorMap-testDb-map', ['map']);
 
   jest.setTimeout(50000);
 

@@ -1,7 +1,7 @@
 import express, {Router} from 'express';
 import assetRouter from './asset.router';
 import mapRouter from './map.router';
-import checkPointRouter from "./check-point.router";
+import checkPointRouter from './check-point.router';
 
 // eslint-disable-next-line new-cap
 const routes = Router();

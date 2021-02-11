@@ -1,27 +1,28 @@
 import fs from 'fs';
 import csv from 'csv-parser';
-
 import AppError from '../common/error/models/app-error.model';
 
-export default async function <T> (
+/**
+ * Parses an csv file and return row of objects type T
+ * @param {string} path
+ * @return {Promise<[]>}
+ */
+export default async function <T>(
     path: string
 ): Promise<T[]> {
-    let datas: Array<T[]> = [];
+  const documents: T[] = [];
 
-    // @ts-ignore
-    return new Promise((resolve)=> {
-        fs.createReadStream(path)
-            .pipe(csv())
-            .on('data',async (data)=> {
-                datas.push(data)
-            })
-            .on('end',async ()=> {
-                fs.unlinkSync(path)
-                if(datas.length) {
-                    resolve(datas)
-                }
-            });
-    }).catch((e) => {
-        throw new AppError(e, 404, true)
-    })
+  return new Promise<T[]>((resolve) => {
+    fs.createReadStream(path)
+        .pipe(csv())
+        .on('data', async (row)=> {
+          documents.push(row as T);
+        })
+        .on('end', async ()=> {
+          fs.unlinkSync(path);
+          resolve(documents);
+        });
+  }).catch((e) => {
+    throw new AppError(e, 404, true);
+  });
 }

@@ -8,8 +8,11 @@ import {
   createAsset,
   updateAsset,
   deleteAsset,
-} from '../services/asset.service';
+  findMapsByAsset,
+  findCheckPointsByAsset
+} from '../services';
 import {setAsset} from '../middlewares/asset.middleware';
+import mapRouter from './map.router';
 
 // eslint-disable-next-line new-cap
 const assetRouter = Router();
@@ -27,6 +30,7 @@ assetRouter.get('',
 /**
  * Create an Asset
  * After create, update asset maps (add)
+ * // TODO Field controls
  * @return {Asset}
  */
 assetRouter.post('',
@@ -51,6 +55,7 @@ assetRouter.get('/:id',
  * Update an Asset
  * After update, update asset of maps (update)
  * After update, update asset of checkPoints (update)
+ * // TODO Field controls
  * @return {Asset}
  */
 assetRouter.put('/:id',
@@ -68,7 +73,29 @@ assetRouter.put('/:id',
 assetRouter.delete('/:id',
     setAsset,
     catchAsync(async (req: Request, res: Response) => {
-      return res.status(200).json(await deleteAsset(req.asset!.id));
+      return res.status(200).json(await deleteAsset(req.asset!._id));
+    }),
+);
+
+/**
+ * Get an Asset maps by id
+ * @return {Map[]}
+ */
+assetRouter.get('/:id/map',
+    setAsset,
+    catchAsync(async (req: Request, res: Response) => {
+      return res.status(200).json(await findMapsByAsset(req.asset!._id));
+    }),
+);
+
+/**
+ * Get an Asset checkPoints by id
+ * @return {CheckPoint[]}
+ */
+assetRouter.get('/:id/checkPoint',
+    setAsset,
+    catchAsync(async (req: Request, res: Response) => {
+      return res.status(200).json(await findCheckPointsByAsset(req.asset!._id));
     }),
 );
 

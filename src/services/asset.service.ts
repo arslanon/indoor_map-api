@@ -17,7 +17,8 @@ export async function findAssets(): Promise<Asset[]> {
       .select({
         _id: 1,
         name: 1,
-      });
+      })
+      .lean<Asset[]>();
 }
 
 /**
@@ -32,7 +33,8 @@ export async function findAssetById(id: string) {
         name: 1,
         maps: 1,
         checkPoints: 1,
-      });
+      })
+      .lean<Asset>();
 }
 
 /**
@@ -71,7 +73,7 @@ export async function updateAsset(asset: Asset, name: string) {
       {_id: asset._id},
       {name: name},
       {new: true},
-  );
+  ).lean<Asset>();
 
   if (! assetUpdated) throw new AppError('error.notFound.asset', 404);
 
@@ -116,7 +118,7 @@ export async function addMapIntoAsset(id: string, map: Map) {
       {_id: id},
       {$push: {maps: map}},
       {new: true},
-  );
+  ).lean<Asset>();
 }
 
 /**
@@ -131,7 +133,7 @@ export async function updateMapInAsset(id: string, map: Map) {
       {'_id': id, 'maps._id': map._id},
       {'maps.$': map},
       {new: true},
-  );
+  ).lean<Asset>();
 }
 
 /**
@@ -170,7 +172,7 @@ export async function addCheckPointIntoAsset(
       {_id: id},
       {$push: {checkPoints: checkPoint}},
       {new: true},
-  );
+  ).lean<Asset>();
 }
 
 /**
@@ -187,7 +189,7 @@ export async function updateCheckPointInAsset(
       {'_id': id, 'checkPoints._id': checkPoint._id},
       {'checkPoints.$': checkPoint},
       {new: true},
-  );
+  ).lean<Asset>();
 }
 
 /**

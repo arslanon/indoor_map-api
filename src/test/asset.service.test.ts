@@ -9,7 +9,7 @@ import {
   createAsset,
   updateAsset,
   deleteAsset,
-} from './asset.service';
+} from '../services';
 
 describe('Asset CRUD Service', () => {
   setupTestDatabase('indoorMap-testDb-asset', ['checkPoint']);

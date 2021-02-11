@@ -50,14 +50,5 @@
     "ts-jest": "^26.4.4",
     "ts-node": "^9.1.1",
     "typescript": "^4.1.3"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/zgnmgg/indoor_map-api.git"
-  },
-  "bugs": {
-    "url": "https://github.com/zgnmgg/indoor_map-api/issues"
-  },
-  "homepage": "https://github.com/zgnmgg/indoor_map-api#readme",
-  "description": ""
+  }
 }

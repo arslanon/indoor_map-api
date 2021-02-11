@@ -1,5 +1,5 @@
 
-import imageTileParser from './image-tile.parser';
+import imageTileParser from './../shared/image-tile.parser';
 import fs from 'mz/fs';
 
 describe('Image Tile Parsing', () => {

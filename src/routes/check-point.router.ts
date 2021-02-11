@@ -1,37 +1,40 @@
 import {Router, Request, Response} from 'express';
 
 import {
-    catchAsync,
+  catchAsync,
 } from '../common/error';
 import {
-    findCheckPointsByMap,
-    createCheckPointWithCSV
+  findCheckPointsByMap,
+  upsertCheckPointWithCSV,
 } from '../services';
-import { setCheckPoint } from '../middlewares/check-point.middleware'
-import { uploadCSVFile } from '../middlewares/upload-image.middleware'
+import {setCheckPoint} from '../middlewares/check-point.middleware';
+import {uploadCSVFile} from '../middlewares/upload.middleware';
+
+// eslint-disable-next-line new-cap
 const checkPointRouter = Router();
 
 /**
- * Get all Check Points By Map
+ * Get a Check Point
  */
 checkPointRouter.get('/:id',
     setCheckPoint,
     catchAsync(async (req: Request, res: Response) => {
-        const {checkPoint} = req.body;
-        return res.status(200).json(await findCheckPointsByMap(checkPoint!.map));
+      return res.status(200).json(req.checkPoint);
     })
 );
 
 /**
- * Create a Check point
+ * Create a Check Point
  * After create, update check point (add)
  * @return {}
  */
 checkPointRouter.post('/csv',
     uploadCSVFile,
     catchAsync(async (req: Request, res: Response) => {
-        const {assetId, mapId} = req.body;
-        return res.status(200).send(await createCheckPointWithCSV(req.file?.path, assetId, mapId));
+      const {assetId, mapId} = req.body;
+      return res.status(200).send(
+          await upsertCheckPointWithCSV(req.file?.path, assetId, mapId),
+      );
     })
 );
 
