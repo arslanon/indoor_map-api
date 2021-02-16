@@ -4,7 +4,7 @@ import fs from 'mz/fs';
 
 describe('Image Tile Parsing', () => {
   it('Parse an image', async (done) => {
-    await fs.copyFile(`images/ai.jpg`, `tmp/uploads/ai.jpg`, () => {});
+    fs.copyFileSync(`images/ai.jpg`, `tmp/uploads/ai.jpg`);
 
     const res = await imageTileParser(
         `tmp/uploads/ai.jpg`,

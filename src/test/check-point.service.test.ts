@@ -1,17 +1,23 @@
 /* eslint-disable max-len */
 import setupTestDatabase from '../shared/db-test-setup';
-import AssetDoc, {Asset} from '../models/asset.model';
 import MapDoc, {Map} from '../models/map.model';
 import CheckPointDoc, {CheckPoint} from '../models/check-point.model';
 import {
+  findCheckPoints,
   findCheckPointsByMap,
   findCheckPointById,
+  findCheckPointByIdWithThrow,
+  findCheckPointByMacAddress,
+  existsCheckPointByMacAddress,
   createCheckPoint,
   updateCheckPoint,
+  setCheckPointMap,
+  unsetCheckPointMap,
   updateCheckPointPosition,
   deleteCheckPoint,
-  upsertCheckPointWithCSV
+  upsertCheckPointWithCSV,
 } from '../services';
+import mongoose from 'mongoose';
 import fs from 'fs';
 
 describe('CheckPoint CRUD Service', () => {
@@ -21,7 +27,16 @@ describe('CheckPoint CRUD Service', () => {
 
   // <editor-fold desc="FIND">
 
-  it('Find checkPoints that belong to a map', async (done) => {
+  it('Find checkPoints', async (done) => {
+    const checkPoints: CheckPoint[] = await findCheckPoints();
+
+    expect(checkPoints).toBeTruthy();
+    expect(checkPoints).toHaveLength(3);
+
+    done();
+  });
+
+  it('Find checkPoints by a map', async (done) => {
     const map: Map | null = await MapDoc.findOne({name: 'Map1'});
     expect(map).toBeTruthy();
 
@@ -33,7 +48,7 @@ describe('CheckPoint CRUD Service', () => {
     done();
   });
 
-  it('Find a checkPoint', async (done) => {
+  it('Find a checkPoint by id', async (done) => {
     const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
     expect(checkPoint).toBeTruthy();
 
@@ -41,14 +56,49 @@ describe('CheckPoint CRUD Service', () => {
 
     expect(checkPointFound).toBeTruthy();
     expect(checkPointFound!._id).toBeTruthy();
-    expect(checkPointFound!.name).toStrictEqual('CheckPoint1');
+    expect(checkPointFound!.name).toStrictEqual(checkPoint!.name);
     expect(checkPointFound!.macAddress).toBeTruthy();
-    expect(checkPointFound!.asset).toBeTruthy();
-    expect(checkPointFound!.asset!.name).toStrictEqual('Asset1');
     expect(checkPointFound!.map).toBeTruthy();
-    expect(checkPointFound!.map!.name).toStrictEqual('Map1');
     expect(checkPointFound!.x).not.toBeTruthy();
     expect(checkPointFound!.y).not.toBeTruthy();
+
+    done();
+  });
+
+  it('Find a checkPoint by id throws', async (done) => {
+    await expect(findCheckPointByIdWithThrow(new mongoose.Types.ObjectId().toHexString()))
+        .rejects.toThrow();
+    await expect(findCheckPointByIdWithThrow(new mongoose.Types.ObjectId().toHexString()))
+        .rejects.toThrowError('error.notFound.checkPoint');
+
+    done();
+  });
+
+  it('Find a checkPoint by macAddress', async (done) => {
+    const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
+    expect(checkPoint).toBeTruthy();
+
+    const checkPointFound: CheckPoint | null = await findCheckPointByMacAddress(checkPoint!.macAddress);
+
+    expect(checkPointFound).toBeTruthy();
+    expect(checkPointFound!._id).toBeTruthy();
+    expect(checkPointFound!.name).toStrictEqual(checkPoint!.name);
+    expect(checkPointFound!.macAddress).toBeTruthy();
+    expect(checkPointFound!.macAddress).toStrictEqual(checkPoint!.macAddress);
+    expect(checkPointFound!.map).toBeTruthy();
+    expect(checkPointFound!.x).not.toBeTruthy();
+    expect(checkPointFound!.y).not.toBeTruthy();
+
+    done();
+  });
+
+  it('Exists a checkPoint by macAddress', async (done) => {
+    const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
+    expect(checkPoint).toBeTruthy();
+
+    const exists: boolean = await existsCheckPointByMacAddress(checkPoint!.macAddress);
+
+    expect(exists).toStrictEqual(true);
 
     done();
   });
@@ -58,408 +108,41 @@ describe('CheckPoint CRUD Service', () => {
   // <editor-fold desc="CREATE">
 
   // noinspection DuplicatedCode
-  it('Create a checkPoint - Send name, macAddress, asset and map', async (done) => {
-    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset).toBeTruthy();
-
+  it('Create a checkPoint', async (done) => {
     const map: Map | null = await MapDoc.findOne({name: 'Map1'});
     expect(map).toBeTruthy();
 
     const checkPoint: CheckPoint = await createCheckPoint(
         'TestCheckPoint1',
-        '111111',
-            asset!._id,
-            map!._id,
+        '112233445566'
     );
 
     expect(checkPoint).toBeTruthy();
     expect(checkPoint._id).toBeTruthy();
     expect(checkPoint.name).toStrictEqual('TestCheckPoint1');
-    expect(checkPoint.macAddress).toStrictEqual('111111');
-    expect(checkPoint.asset).toBeTruthy();
-    expect(checkPoint.asset!.name).toStrictEqual(asset!.name);
-    expect(checkPoint.map).toBeTruthy();
-    expect(checkPoint.map!.name).toStrictEqual(map!.name);
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === checkPoint.name)).toHaveLength(1);
-
-    const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(mapUpdated).toBeTruthy();
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === checkPoint.name)).toHaveLength(1);
+    expect(checkPoint.macAddress).toStrictEqual('112233445566');
 
     done();
   });
 
   // noinspection DuplicatedCode
-  it('Create a checkPoint - Send name, macAddress and asset', async (done) => {
-    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset).toBeTruthy();
-
-    const checkPoint: CheckPoint = await createCheckPoint(
-        'TestCheckPoint1',
-        '111111',
-            asset!._id,
-    );
-
-    expect(checkPoint).toBeTruthy();
-    expect(checkPoint._id).toBeTruthy();
-    expect(checkPoint.name).toStrictEqual('TestCheckPoint1');
-    expect(checkPoint.macAddress).toStrictEqual('111111');
-    expect(checkPoint.asset).toBeTruthy();
-    expect(checkPoint.asset!.name).toStrictEqual(asset!.name);
-    expect(checkPoint.map).not.toBeTruthy();
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === checkPoint.name)).toHaveLength(1);
-
-    const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(mapUpdated).toBeTruthy();
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === checkPoint.name)).toHaveLength(0);
-
-    done();
-  });
-
-  // noinspection DuplicatedCode
-  it('Create a checkPoint - Send name, macAddress and map', async (done) => {
-    const map: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(map).toBeTruthy();
-
-    const checkPoint: CheckPoint = await createCheckPoint(
-        'TestCheckPoint1',
-        '111111',
-        undefined,
-            map!._id,
-    );
-
-    expect(checkPoint).toBeTruthy();
-    expect(checkPoint._id).toBeTruthy();
-    expect(checkPoint.name).toStrictEqual('TestCheckPoint1');
-    expect(checkPoint.macAddress).toStrictEqual('111111');
-    expect(checkPoint.asset).not.toBeTruthy();
-    expect(checkPoint.map).not.toBeTruthy();
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === checkPoint.name)).toHaveLength(0);
-
-    const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(mapUpdated).toBeTruthy();
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === checkPoint.name)).toHaveLength(0);
-
-    done();
-  });
-
-  // noinspection DuplicatedCode
-  it('Create a checkPoint - Send name and macAddress', async (done) => {
-    const checkPoint: CheckPoint = await createCheckPoint(
-        'TestCheckPoint1',
-        '111111',
-    );
-
-    expect(checkPoint).toBeTruthy();
-    expect(checkPoint._id).toBeTruthy();
-    expect(checkPoint.name).toStrictEqual('TestCheckPoint1');
-    expect(checkPoint.macAddress).toStrictEqual('111111');
-    expect(checkPoint.asset).not.toBeTruthy();
-    expect(checkPoint.map).not.toBeTruthy();
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === checkPoint.name)).toHaveLength(0);
-
-    const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(mapUpdated).toBeTruthy();
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === checkPoint.name)).toHaveLength(0);
-
-    done();
-  });
-
-  // noinspection DuplicatedCode
-  it('Create a checkPoint - Send name, macAddress, asset1 and map2 (map2 does not belong asset1)', async (done) => {
-    const asset1: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset1).toBeTruthy();
-
-    const map1: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(map1).toBeTruthy();
-
-    const map2: Map | null = await MapDoc.findOne({name: 'Map2'});
-    expect(map2).toBeTruthy();
-
-    const checkPoint: CheckPoint = await createCheckPoint(
-        'TestCheckPoint1',
-        '111111',
-            asset1!._id,
-            map2!._id,
-    );
-
-    expect(checkPoint).toBeTruthy();
-    expect(checkPoint._id).toBeTruthy();
-    expect(checkPoint.name).toStrictEqual('TestCheckPoint1');
-    expect(checkPoint.macAddress).toStrictEqual('111111');
-    expect(checkPoint.asset).toBeTruthy();
-    expect(checkPoint.asset!.name).toStrictEqual(asset1!.name);
-    expect(checkPoint.map).not.toBeTruthy();
-
-    const asset1Updated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset1Updated).toBeTruthy();
-    expect(asset1Updated!.checkPoints.filter((c) => c.name === checkPoint.name)).toHaveLength(1);
-
-    const map1Updated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(map1Updated).toBeTruthy();
-    expect(map1Updated!.checkPoints.filter((c) => c.name === checkPoint.name)).toHaveLength(0);
-
-    const map2Updated: Map | null = await MapDoc.findOne({name: 'Map2'});
-    expect(map2Updated).toBeTruthy();
-    expect(map2Updated!.checkPoints.filter((c) => c.name === checkPoint.name)).toHaveLength(0);
-
-    done();
-  });
-
-  // noinspection DuplicatedCode
-  it('Create a checkPoint with csv - Send name, macAddress, asset and map', async (done) => {
-    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset).toBeTruthy();
-
-    const map: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(map).toBeTruthy();
-    await fs.copyFile(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`, () => {});
+  it('Create checkPoints with csv', async (done) => {
+    fs.copyFileSync(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`);
 
     const checkPoints: CheckPoint[] = await upsertCheckPointWithCSV(
-        'tmp/uploads/checkpoints.csv',
-        asset!._id,
-        map!._id
+        'tmp/uploads/checkpoints.csv'
     );
-    const [first, second, third] = checkPoints;
-    // expect(first.asset!.name).toEqual("Asset1");
-    // expect(first.map!.name).toEqual("Map1");
-    // expect(second.asset!.name).toEqual("Asset1");
-    // expect(second.map!.name).toEqual("Map1");
-    // expect(third.asset!.name).toEqual("Asset1");
-    // expect(third.map!.name).toEqual("Map1");
-    //
-    // expect(checkPoints.some(({name}) => name === "New ozgun")).toBe(true);
-    //
-    // expect(checkPoints).toBeTruthy();
-    // expect(checkPoints).toHaveLength(3);
-    //
-    // const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    // expect(assetUpdated).toBeTruthy();
-    // expect(assetUpdated!.checkPoints.filter((c) => c.name === first.name)).toHaveLength(1);
-    // expect(assetUpdated!.checkPoints.filter((c) => c.name === second.name)).toHaveLength(1);
-    // expect(assetUpdated!.checkPoints.filter((c) => c.name === third.name)).toHaveLength(1);
-    //
-    // const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    // expect(mapUpdated).toBeTruthy();
-    // expect(mapUpdated!.checkPoints.filter((c) => c.name === first.name)).toHaveLength(1);
-    // expect(mapUpdated!.checkPoints.filter((c) => c.name === second.name)).toHaveLength(1);
-    // expect(mapUpdated!.checkPoints.filter((c) => c.name === third.name)).toHaveLength(1);
-
-    done();
-  });
-
-  // noinspection DuplicatedCode
-  it('Create a checkPoint with csv - Send name, macAddress and asset', async (done) => {
-    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset).toBeTruthy();
-
-    await fs.copyFile(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`, () => {});
-
-    const checkPoints: CheckPoint[] = await upsertCheckPointWithCSV(
-        'tmp/uploads/checkpoints.csv',
-        asset!._id,
-        undefined
-    );
-    const [first, second, third] = checkPoints;
-    expect(first.asset!.name).toEqual("Asset1");
-    expect(first.asset!.name).toStrictEqual(asset!.name);
-    expect(first.asset).toBeTruthy();
-    expect(first.map).not.toBeTruthy();
-    expect(second.asset!.name).toEqual("Asset1");
-    expect(third.asset!.name).toEqual("Asset1");
-
-    expect(checkPoints.some(({name}) => name === "New ozgun")).toBe(true);
 
     expect(checkPoints).toBeTruthy();
     expect(checkPoints).toHaveLength(3);
 
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === first.name)).toHaveLength(1);
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === second.name)).toHaveLength(1);
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === third.name)).toHaveLength(1);
-
-    const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(mapUpdated).toBeTruthy();
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === first.name)).toHaveLength(0);
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === second.name)).toHaveLength(0);
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === third.name)).toHaveLength(0);
-
-    done();
-  });
-
-  // noinspection DuplicatedCode
-  it('Create a checkPoint with csv - Send name, macAddress and map', async (done) => {
-    const map: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(map).toBeTruthy();
-
-    await fs.copyFile(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`, () => {});
-
-    const checkPoints: CheckPoint[] = await upsertCheckPointWithCSV(
-        'tmp/uploads/checkpoints.csv',
-        undefined,
-        map!._id
-    );
     const [first, second, third] = checkPoints;
-    expect(first.asset).not.toBeTruthy();
-    expect(first.map).not.toBeTruthy();
-
-    expect(checkPoints.some(({name}) => name === "New ozgun")).toBe(true);
-
-    expect(checkPoints).toBeTruthy();
-    expect(checkPoints).toHaveLength(3);
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === first.name)).toHaveLength(0);
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === second.name)).toHaveLength(0);
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === third.name)).toHaveLength(0);
-
-    const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(mapUpdated).toBeTruthy();
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === first.name)).toHaveLength(0);
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === second.name)).toHaveLength(0);
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === third.name)).toHaveLength(0);
-
-    done();
-  });
-
-  // noinspection DuplicatedCode
-  it('Create a checkPoint with csv - Send name, macAddress', async (done) => {
-
-    await fs.copyFile(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`, () => {});
-
-    const checkPoints: CheckPoint[] = await upsertCheckPointWithCSV(
-        'tmp/uploads/checkpoints.csv',
-        undefined,
-        undefined
-    );
-    expect(checkPoints.some(({name}) => name === "New ozgun")).toBe(true);
-
-    expect(checkPoints).toBeTruthy();
-    expect(checkPoints).toHaveLength(3);
-    const [first, second, third] = checkPoints;
-    expect(first.asset).not.toBeTruthy();
-    expect(first.map).not.toBeTruthy();
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === first.name)).toHaveLength(0);
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === second.name)).toHaveLength(0);
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === third.name)).toHaveLength(0);
-
-    const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(mapUpdated).toBeTruthy();
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === first.name)).toHaveLength(0);
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === second.name)).toHaveLength(0);
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === third.name)).toHaveLength(0);
-
-    done();
-  });
-
-  // noinspection DuplicatedCode
-  it('Create a checkPoint with csv mac address - Send name, macAddress', async (done) => {
-
-    const checkPoint: CheckPoint = await createCheckPoint(
-        'TestCheckPoint1',
-        '70B3D580A010062F',
-        undefined
-    );
-    expect(checkPoint).toBeTruthy();
-    expect(checkPoint._id).toBeTruthy();
-    expect(checkPoint.name).toStrictEqual('TestCheckPoint1');
-    expect(checkPoint.macAddress).toStrictEqual('70B3D580A010062F');
-    expect(checkPoint.map).not.toBeTruthy();
-
-    await fs.copyFile(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`, () => {});
-
-    const checkPoints: CheckPoint[] = await upsertCheckPointWithCSV(
-        'tmp/uploads/checkpoints.csv',
-        undefined,
-        undefined
-    );
-    expect(checkPoints.some(({name}) => name === "New ozgun")).toBe(true);
-    expect(checkPoints.some(({name}) => name === "TestCheckPoint1")).toBe(false);
-
-    expect(checkPoints).toBeTruthy();
-    expect(checkPoints).toHaveLength(3);
-    const [first, second, third] = checkPoints;
-    expect(first.asset).not.toBeTruthy();
-    expect(first.map).not.toBeTruthy();
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === first.name)).toHaveLength(0);
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === second.name)).toHaveLength(0);
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === third.name)).toHaveLength(0);
-
-    const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(mapUpdated).toBeTruthy();
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === first.name)).toHaveLength(0);
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === second.name)).toHaveLength(0);
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === third.name)).toHaveLength(0);
-
-    done();
-  });
-
-  // noinspection DuplicatedCode
-  it('Create a checkPoint with csv - Send name, macAddress, asset1 and map2 (map2 does not belong asset1)', async (done) => {
-    await fs.copyFile(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`, () => {});
-
-    const asset1: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset1).toBeTruthy();
-
-    const map1: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(map1).toBeTruthy();
-
-    const map2: Map | null = await MapDoc.findOne({name: 'Map2'});
-    expect(map2).toBeTruthy();
-
-    // @ts-ignore
-    const checkPoints: CheckPoint[] = await upsertCheckPointWithCSV(
-        'tmp/uploads/checkpoints.csv',
-        asset1!._id,
-        map2!._id,
-    );
-
-    const [first, second, third] = checkPoints;
-    expect(first.asset!.name).toEqual("Asset1");
-    expect(second.asset!.name).toEqual("Asset1");
-    expect(third.asset!.name).toEqual("Asset1");
-    expect(first.asset).toBeTruthy();
-    expect(first.asset!.name).toStrictEqual(asset1!.name);
-    expect(first.map).not.toBeTruthy();
-
-    expect(checkPoints.some(({name}) => name === "New ozgun")).toBe(true);
-
-    expect(checkPoints).toBeTruthy();
-    expect(checkPoints).toHaveLength(3);
-
-
-    const asset1Updated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset1Updated).toBeTruthy();
-    expect(asset1Updated!.checkPoints.filter((c) => c.name === first.name)).toHaveLength(1);
-
-    const map1Updated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(map1Updated).toBeTruthy();
-    expect(map1Updated!.checkPoints.filter((c) => c.name === first.name)).toHaveLength(0);
-
-    const map2Updated: Map | null = await MapDoc.findOne({name: 'Map2'});
-    expect(map2Updated).toBeTruthy();
-    expect(map2Updated!.checkPoints.filter((c) => c.name === first.name)).toHaveLength(0);
-
+    expect(first.name).toEqual('CSV CheckPoint 1');
+    expect(first.macAddress).toEqual('70B3D580A010062F');
+    expect(second.name).toEqual('CSV CheckPoint 2');
+    expect(second.macAddress).toEqual('70B3D580A010062C');
+    expect(third.name).toEqual('CSV CheckPoint 3');
+    expect(third.macAddress).toEqual('50B3D580A010062C');
 
     done();
   });
@@ -469,190 +152,61 @@ describe('CheckPoint CRUD Service', () => {
   // <editor-fold desc="UPDATE">
 
   // noinspection DuplicatedCode
-  it('Update a checkPoint - Send name and macAddress', async (done) => {
+  it('Update a checkPoint', async (done) => {
     const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
     expect(checkPoint).toBeTruthy();
 
     const checkPointUpdated: CheckPoint = await updateCheckPoint(
             checkPoint!._id,
             'TestCheckPoint1',
-            '111111',
+            '665544332211',
     );
 
     expect(checkPointUpdated).toBeTruthy();
     expect(checkPointUpdated._id).toBeTruthy();
     expect(checkPointUpdated.name).toStrictEqual('TestCheckPoint1');
-    expect(checkPointUpdated.macAddress).toStrictEqual('111111');
-    expect(checkPointUpdated.asset).not.toBeTruthy();
-    expect(checkPointUpdated.map).not.toBeTruthy();
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints).toHaveLength(0);
-
-    const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(mapUpdated).toBeTruthy();
-    expect(mapUpdated!.checkPoints).toHaveLength(0);
-
-    done();
-  });
-
-  // noinspection DuplicatedCode
-  it('Update a checkPoint - Send name, macAddress, asset and map', async (done) => {
-    const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
-    expect(checkPoint).toBeTruthy();
-
-    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset).toBeTruthy();
-
-    const map: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(map).toBeTruthy();
-
-    const checkPointUpdated: CheckPoint = await updateCheckPoint(
-            checkPoint!._id,
-            'TestCheckPoint1',
-            '111111',
-            asset!._id,
-            map!._id,
-    );
-
-    expect(checkPointUpdated).toBeTruthy();
-    expect(checkPointUpdated._id).toBeTruthy();
-    expect(checkPointUpdated.name).toStrictEqual('TestCheckPoint1');
-    expect(checkPointUpdated.macAddress).toStrictEqual('111111');
-    expect(checkPointUpdated.asset).toBeTruthy();
-    expect(checkPointUpdated.asset!.name).toStrictEqual(asset!.name);
-    expect(checkPointUpdated.map!.name).toStrictEqual(map!.name);
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints).toHaveLength(1);
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === checkPoint!.name)).toHaveLength(0);
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === checkPointUpdated.name)).toHaveLength(1);
+    expect(checkPointUpdated.macAddress).toStrictEqual('665544332211');
+    expect(checkPointUpdated.map).toBeTruthy();
 
     const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
     expect(mapUpdated).toBeTruthy();
     expect(mapUpdated!.checkPoints).toHaveLength(1);
     expect(mapUpdated!.checkPoints.filter((c) => c.name === checkPoint!.name)).toHaveLength(0);
-    expect(mapUpdated!.checkPoints.filter((c) => c.name === checkPointUpdated.name)).toHaveLength(1);
+    expect(mapUpdated!.checkPoints.filter((c) => c.name === checkPointUpdated!.name)).toHaveLength(1);
 
     done();
   });
 
   // noinspection DuplicatedCode
-  it('Update a checkPoint - Send name, macAddress and asset', async (done) => {
-    const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
-    expect(checkPoint).toBeTruthy();
-
-    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset).toBeTruthy();
-
-    const map: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(map).toBeTruthy();
-
-    const checkPointUpdated: CheckPoint = await updateCheckPoint(
-            checkPoint!._id,
-            'TestCheckPoint1',
-            '111111',
-            asset!._id,
+  it('Update checkPoints with csv', async (done) => {
+    const checkPoint: CheckPoint = await createCheckPoint(
+        'TestCheckPoint1',
+        '70B3D580A010062F'
     );
 
-    expect(checkPointUpdated).toBeTruthy();
-    expect(checkPointUpdated._id).toBeTruthy();
-    expect(checkPointUpdated.name).toStrictEqual('TestCheckPoint1');
-    expect(checkPointUpdated.macAddress).toStrictEqual('111111');
-    expect(checkPointUpdated.asset).toBeTruthy();
-    expect(checkPointUpdated.asset!.name).toStrictEqual(asset!.name);
-    expect(checkPointUpdated.map).not.toBeTruthy();
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints).toHaveLength(1);
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === checkPoint!.name)).toHaveLength(0);
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === checkPointUpdated.name)).toHaveLength(1);
-
-    const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(mapUpdated).toBeTruthy();
-    expect(mapUpdated!.checkPoints).toHaveLength(0);
-
-    done();
-  });
-
-  // noinspection DuplicatedCode
-  it('Update a checkPoint - Send name, macAddress and map (without asset)', async (done) => {
-    const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
     expect(checkPoint).toBeTruthy();
+    expect(checkPoint._id).toBeTruthy();
+    expect(checkPoint.name).toStrictEqual('TestCheckPoint1');
+    expect(checkPoint.macAddress).toStrictEqual('70B3D580A010062F');
+    expect(checkPoint.map).not.toBeTruthy();
 
-    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset).toBeTruthy();
+    fs.copyFileSync(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`);
 
-    const map: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(map).toBeTruthy();
-
-    const checkPointUpdated: CheckPoint = await updateCheckPoint(
-            checkPoint!._id,
-            'TestCheckPoint1',
-            '111111',
-            map!._id,
+    const checkPoints: CheckPoint[] = await upsertCheckPointWithCSV(
+        'tmp/uploads/checkpoints.csv'
     );
 
-    expect(checkPointUpdated).toBeTruthy();
-    expect(checkPointUpdated._id).toBeTruthy();
-    expect(checkPointUpdated.name).toStrictEqual('TestCheckPoint1');
-    expect(checkPointUpdated.macAddress).toStrictEqual('111111');
-    expect(checkPointUpdated.asset).not.toBeTruthy();
-    expect(checkPointUpdated.map).not.toBeTruthy();
+    expect(checkPoints).toBeTruthy();
+    expect(checkPoints).toHaveLength(3);
 
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints).toHaveLength(0);
+    const checkPointFound: CheckPoint | null = await findCheckPointByMacAddress(checkPoint.macAddress);
 
-    const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(mapUpdated).toBeTruthy();
-    expect(mapUpdated!.checkPoints).toHaveLength(0);
-
-    done();
-  });
-
-  // noinspection DuplicatedCode
-  it('Update a checkPoint - Send name, macAddress, asset1 and map2 (map2 does not belong asset1)', async (done) => {
-    const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
-    expect(checkPoint).toBeTruthy();
-
-    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset).toBeTruthy();
-
-    const map2: Map | null = await MapDoc.findOne({name: 'Map2'});
-    expect(map2).toBeTruthy();
-
-    const checkPointUpdated: CheckPoint = await updateCheckPoint(
-            checkPoint!._id,
-            'TestCheckPoint1',
-            '111111',
-            asset!._id,
-            map2!._id,
-    );
-
-    expect(checkPointUpdated).toBeTruthy();
-    expect(checkPointUpdated._id).toBeTruthy();
-    expect(checkPointUpdated.name).toStrictEqual('TestCheckPoint1');
-    expect(checkPointUpdated.macAddress).toStrictEqual('111111');
-    expect(checkPointUpdated.asset).toBeTruthy();
-    expect(checkPointUpdated.asset!.name).toStrictEqual(asset!.name);
-    expect(checkPointUpdated.map).not.toBeTruthy();
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints).toHaveLength(1);
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === checkPointUpdated.name)).toHaveLength(1);
-
-    const map1Updated = await MapDoc.findOne({name: 'Map1'});
-    expect(map1Updated).toBeTruthy();
-    expect(map1Updated!.checkPoints).toHaveLength(0);
-
-    const map2Updated = await MapDoc.findOne({name: 'Map2'});
-    expect(map2Updated).toBeTruthy();
-    expect(map2Updated!.checkPoints.filter((c) => c.name === checkPointUpdated.name)).toHaveLength(0);
+    expect(checkPointFound).toBeTruthy();
+    expect(checkPointFound!._id).toBeTruthy();
+    expect(checkPointFound!.name).not.toStrictEqual('TestCheckPoint1');
+    expect(checkPointFound!.name).toStrictEqual('CSV CheckPoint 1');
+    expect(checkPointFound!.macAddress).toBeTruthy();
+    expect(checkPointFound!.macAddress).toStrictEqual(checkPoint!.macAddress);
 
     done();
   });
@@ -663,16 +217,15 @@ describe('CheckPoint CRUD Service', () => {
     expect(checkPoint).toBeTruthy();
 
     const checkPointPositioned: CheckPoint | null = await updateCheckPointPosition(
-            checkPoint!._id,
-            1000,
-            900,
+      checkPoint!._id,
+      1000,
+      900,
     );
 
     expect(checkPointPositioned).toBeTruthy();
     expect(checkPointPositioned!._id).toBeTruthy();
     expect(checkPointPositioned!.name).toBeTruthy();
     expect(checkPointPositioned!.macAddress).toBeTruthy();
-    expect(checkPointPositioned!.asset).toBeTruthy();
     expect(checkPointPositioned!.map).toBeTruthy();
     expect(checkPointPositioned!.x).toStrictEqual(1000);
     expect(checkPointPositioned!.y).toStrictEqual(900);
@@ -681,59 +234,63 @@ describe('CheckPoint CRUD Service', () => {
   });
 
   // noinspection DuplicatedCode
-  it('Update a positioned checkPoint - Send name, macAddress, asset2 and map2', async (done) => {
+  it('Set a checkPoint map', async (done) => {
     const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
     expect(checkPoint).toBeTruthy();
 
-    const asset2: Asset | null = await AssetDoc.findOne({name: 'Asset2'});
-    expect(asset2).toBeTruthy();
+    const map: Map | null = await MapDoc.findOne({name: 'Map2'});
+    expect(map).toBeTruthy();
 
-    const map2: Map | null = await MapDoc.findOne({name: 'Map2'});
-    expect(map2).toBeTruthy();
-
-    const checkPointPositioned: CheckPoint | null = await updateCheckPointPosition(
+    const checkPointUpdated: CheckPoint = await setCheckPointMap(
             checkPoint!._id,
-            1000,
-            900,
-    );
-    expect(checkPointPositioned).toBeTruthy();
-    expect(checkPointPositioned!.x).toStrictEqual(1000);
-    expect(checkPointPositioned!.y).toStrictEqual(900);
-
-    const checkPointUpdated: CheckPoint = await updateCheckPoint(
-            checkPoint!._id,
-            'TestCheckPoint1',
-            '111111',
-            asset2!._id,
-            map2!._id,
+            map!._id,
+            520,
+            480
     );
 
     expect(checkPointUpdated).toBeTruthy();
     expect(checkPointUpdated._id).toBeTruthy();
-    expect(checkPointUpdated.name).toStrictEqual('TestCheckPoint1');
-    expect(checkPointUpdated.macAddress).toStrictEqual('111111');
-    expect(checkPointUpdated.asset).toBeTruthy();
-    expect(checkPointUpdated.asset!.name).toStrictEqual(asset2!.name);
-    expect(checkPointUpdated.map).toBeTruthy();
-    expect(checkPointUpdated.map!.name).toStrictEqual(map2!.name);
+    expect(checkPointUpdated.name).toBeTruthy();
+    expect(checkPointUpdated.macAddress).toBeTruthy();
+    expect(checkPointUpdated.x).toStrictEqual(520);
+    expect(checkPointUpdated.y).toStrictEqual(480);
+    expect(checkPointUpdated.map!._id).toStrictEqual(map!._id);
+    expect(checkPointUpdated.map!.name).toStrictEqual(map!.name);
+
+    const mapOld: Map | null = await MapDoc.findOne({name: 'Map1'});
+    expect(mapOld).toBeTruthy();
+    expect(mapOld!.checkPoints).toHaveLength(0);
+    expect(mapOld!.checkPoints.filter((c) => c.name === checkPointUpdated.name)).toHaveLength(0);
+
+    const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map2'});
+    expect(mapUpdated).toBeTruthy();
+    expect(mapUpdated!.checkPoints).toHaveLength(2);
+    expect(mapUpdated!.checkPoints.filter((c) => c.name === checkPointUpdated.name)).toHaveLength(1);
+
+    done();
+  });
+
+  // noinspection DuplicatedCode
+  it('Unset a checkPoint map', async (done) => {
+    const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
+    expect(checkPoint).toBeTruthy();
+
+    const checkPointUpdated: CheckPoint = await unsetCheckPointMap(
+      checkPoint!._id
+    );
+
+    expect(checkPointUpdated).toBeTruthy();
+    expect(checkPointUpdated._id).toBeTruthy();
+    expect(checkPointUpdated.name).toBeTruthy();
+    expect(checkPointUpdated.macAddress).toBeTruthy();
+    expect(checkPointUpdated.map).not.toBeTruthy();
     expect(checkPointUpdated.x).not.toBeTruthy();
     expect(checkPointUpdated.y).not.toBeTruthy();
 
-    const asset1Updated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset1Updated).toBeTruthy();
-    expect(asset1Updated!.checkPoints.filter((c) => c.name === checkPointUpdated.name)).toHaveLength(0);
-
-    const asset2Updated: Asset | null = await AssetDoc.findOne({name: 'Asset2'});
-    expect(asset2Updated).toBeTruthy();
-    expect(asset2Updated!.checkPoints.filter((c) => c.name === checkPointUpdated.name)).toHaveLength(1);
-
-    const map1Updated: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(map1Updated).toBeTruthy();
-    expect(map1Updated!.checkPoints.filter((c) => c.name === checkPointUpdated.name)).toHaveLength(0);
-
-    const map2Updated: Map | null = await MapDoc.findOne({name: 'Map2'});
-    expect(map2Updated).toBeTruthy();
-    expect(map2Updated!.checkPoints.filter((c) => c.name === checkPointUpdated.name)).toHaveLength(1);
+    const mapOld: Map | null = await MapDoc.findOne({name: 'Map1'});
+    expect(mapOld).toBeTruthy();
+    expect(mapOld!.checkPoints).toHaveLength(0);
+    expect(mapOld!.checkPoints.filter((c) => c.name === checkPointUpdated.name)).toHaveLength(0);
 
     done();
   });
@@ -746,10 +303,6 @@ describe('CheckPoint CRUD Service', () => {
     const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
     expect(checkPoint).toBeTruthy();
 
-    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset).toBeTruthy();
-    expect(asset!.checkPoints.filter((c) => c.name === checkPoint!.name)).toHaveLength(1);
-
     const map: Map | null = await MapDoc.findOne({name: 'Map1'});
     expect(map).toBeTruthy();
     expect(map!.checkPoints.filter((c) => c.name === checkPoint!.name)).toHaveLength(1);
@@ -760,10 +313,6 @@ describe('CheckPoint CRUD Service', () => {
 
     const checkPointDeleted: CheckPoint | null = await findCheckPointById(checkPoint!._id);
     expect(checkPointDeleted).not.toBeTruthy();
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.checkPoints.filter((c) => c.name === checkPoint!.name)).toHaveLength(0);
 
     const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
     expect(mapUpdated).toBeTruthy();

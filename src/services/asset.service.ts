@@ -1,11 +1,9 @@
 
 import AssetDoc, {Asset} from '../models/asset.model';
 import {Map} from '../models/map.model';
-import {CheckPoint} from '../models/check-point.model';
 import {AppError} from '../common/error';
 import {
-  updateAssetOfMaps,
-  updateAssetOfCheckPoints,
+  updateAssetOfMaps
 } from './';
 
 /**
@@ -31,8 +29,7 @@ export async function findAssetById(id: string) {
       .select({
         _id: 1,
         name: 1,
-        maps: 1,
-        checkPoints: 1,
+        maps: 1
       })
       .lean<Asset>();
 }
@@ -62,7 +59,6 @@ export async function createAsset(name: string) {
 /**
  * Update an Asset attributes
  * After update, update asset of maps (update)
- * After update, update asset of checkPoints (update)
  * TODO Need transaction
  * @param {Asset} asset
  * @param {string} name
@@ -78,13 +74,12 @@ export async function updateAsset(asset: Asset, name: string) {
   if (! assetUpdated) throw new AppError('error.notFound.asset', 404);
 
   await updateAssetOfMaps(asset.maps || [], assetUpdated);
-  await updateAssetOfCheckPoints(asset.checkPoints || [], assetUpdated);
 
   return assetUpdated;
 }
 
 /**
- * Delete an Asset if asset includes any maps or checkPoints
+ * Delete an Asset if asset includes any maps
  * @param {string} id
  * @return {Promise<{n, deletedCount, ok}>}
  */
@@ -94,12 +89,8 @@ export async function deleteAsset(id: string) {
   if (asset.maps.length > 0) {
     throw new AppError('error.delete.asset.mapsExists', 400);
   }
-  if (asset.checkPoints.length > 0) {
-    throw new AppError('error.delete.asset.checkpointsExists', 400);
-  }
 
   // await updateAssetOfMaps(asset.maps || [], undefined);
-  // await updateAssetOfCheckPoints(asset.checkPoints || [], undefined);
 
   return AssetDoc.deleteOne({_id: id});
 }
@@ -149,64 +140,6 @@ export async function removeMapFromAsset(id: string, map: Map) {
       {
         $pull: {
           maps: {_id: map._id},
-        },
-      },
-  );
-}
-
-// </editor-fold>
-
-// <editor-fold desc="CheckPoint">
-
-/**
- * Add checkPoint into asset
- * It pushes new checkPoint into asset.checkPoints
- * @param {string} id
- * @param {CheckPoint} checkPoint
- * @return {Promise<Asset | null>}
- */
-export async function addCheckPointIntoAsset(
-    id: string,
-    checkPoint: CheckPoint) {
-  return AssetDoc.findOneAndUpdate(
-      {_id: id},
-      {$push: {checkPoints: checkPoint}},
-      {new: true},
-  ).lean<Asset>();
-}
-
-/**
- * Update checkPoint in asset
- * It updates a checkPoint in asset.checkPoints
- * @param {string} id
- * @param {CheckPoint} checkPoint
- * @return {Promise<Asset | null>}
- */
-export async function updateCheckPointInAsset(
-    id: string,
-    checkPoint: CheckPoint) {
-  return AssetDoc.findOneAndUpdate(
-      {'_id': id, 'checkPoints._id': checkPoint._id},
-      {'checkPoints.$': checkPoint},
-      {new: true},
-  ).lean<Asset>();
-}
-
-/**
- * Remove checkPoint from asset
- * It pulls a checkPoint from asset.checkPoints
- * @param {string} id
- * @param {CheckPoint} checkPoint
- * @return {Promise<{n, nModified, ok}>}
- */
-export async function removeCheckPointFromAsset(
-    id: string,
-    checkPoint: CheckPoint) {
-  return AssetDoc.updateMany(
-      {_id: id},
-      {
-        $pull: {
-          checkPoints: {_id: checkPoint._id},
         },
       },
   );

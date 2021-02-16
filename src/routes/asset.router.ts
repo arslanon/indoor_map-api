@@ -9,10 +9,8 @@ import {
   updateAsset,
   deleteAsset,
   findMapsByAsset,
-  findCheckPointsByAsset
 } from '../services';
 import {setAsset} from '../middlewares/asset.middleware';
-import mapRouter from './map.router';
 
 // eslint-disable-next-line new-cap
 const assetRouter = Router();
@@ -44,7 +42,7 @@ assetRouter.post('',
  * Get an Asset by id
  * @return {Asset}
  */
-assetRouter.get('/:id',
+assetRouter.get('/:assetId',
     setAsset,
     catchAsync(async (req: Request, res: Response) => {
       return res.status(200).json(req.asset);
@@ -54,11 +52,10 @@ assetRouter.get('/:id',
 /**
  * Update an Asset
  * After update, update asset of maps (update)
- * After update, update asset of checkPoints (update)
  * // TODO Field controls
  * @return {Asset}
  */
-assetRouter.put('/:id',
+assetRouter.put('/:assetId',
     setAsset,
     catchAsync(async (req: Request, res: Response) => {
       const {name} = req.body;
@@ -67,10 +64,10 @@ assetRouter.put('/:id',
 );
 
 /**
- * Delete an Asset if asset includes any maps or checkPoints
+ * Delete an Asset if asset includes any maps
  * @returns {Promise<{n, deletedCount, ok}>}
  */
-assetRouter.delete('/:id',
+assetRouter.delete('/:assetId',
     setAsset,
     catchAsync(async (req: Request, res: Response) => {
       return res.status(200).json(await deleteAsset(req.asset!._id));
@@ -81,21 +78,10 @@ assetRouter.delete('/:id',
  * Get an Asset maps by id
  * @return {Map[]}
  */
-assetRouter.get('/:id/map',
+assetRouter.get('/:assetId/map',
     setAsset,
     catchAsync(async (req: Request, res: Response) => {
       return res.status(200).json(await findMapsByAsset(req.asset!._id));
-    }),
-);
-
-/**
- * Get an Asset checkPoints by id
- * @return {CheckPoint[]}
- */
-assetRouter.get('/:id/checkPoint',
-    setAsset,
-    catchAsync(async (req: Request, res: Response) => {
-      return res.status(200).json(await findCheckPointsByAsset(req.asset!._id));
     }),
 );
 

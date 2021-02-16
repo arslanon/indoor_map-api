@@ -59,23 +59,23 @@ describe('Asset CRUD API', () => {
 
     const res: Response = await request
         .put(`/api/asset/${asset!._id}`)
-        .send({name: 'Asset11'})
+        .send({name: 'Flop'})
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json');
 
     expect(res.status).toBe(200);
     expect(res.body._id).toBeTruthy();
-    expect(res.body.name).toStrictEqual('Asset11');
+    expect(res.body.name).toStrictEqual('Flop');
 
     done();
   });
 
   it('DELETE /api/asset/:id - delete an asset', async (done) => {
-    const asset = new AssetDoc({name: 'Flip'});
-    await asset.save();
+    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
+    expect(asset).toBeTruthy();
 
     const res: Response = await request
-        .delete(`/api/asset/${asset._id}`)
+        .delete(`/api/asset/${asset!._id}`)
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json');
 

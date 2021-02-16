@@ -54,7 +54,7 @@ mapRouter.post('',
  * Get a Map by id
  * @return {Map}
  */
-mapRouter.get('/:id',
+mapRouter.get('/:mapId',
     setMap,
     catchAsync(async (req: Request, res: Response) => {
       return res.status(200).json(req.map);
@@ -68,7 +68,7 @@ mapRouter.get('/:id',
  * // TODO Field controls
  * @return {Map}
  */
-mapRouter.put('/:id',
+mapRouter.put('/:mapId',
     setMap,
     uploadSingleImage,
     catchAsync(async (req: Request, res: Response) => {
@@ -89,7 +89,7 @@ mapRouter.put('/:id',
  * Before delete, update maps of asset (remove)
  * @returns {Promise<{n, deletedCount, ok}>}
  */
-mapRouter.delete('/:id',
+mapRouter.delete('/:mapId',
     setMap,
     catchAsync(async (req: Request, res: Response) => {
       return res.status(200).json(await deleteMap(req.map!._id));
@@ -100,7 +100,7 @@ mapRouter.delete('/:id',
  * Get a Map CheckPoints by id
  * @return {CheckPoint[]}
  */
-mapRouter.get('/:id/checkPoint',
+mapRouter.get('/:mapId/checkPoint',
     setMap,
     catchAsync(async (req: Request, res: Response) => {
       return res.status(200).json(await findCheckPointsByMap(req.map!._id));
@@ -116,7 +116,7 @@ mapRouter.get('/:id/checkPoint',
  * // TODO Field controls
  * @return {Map}
  */
-mapRouter.put('/:id/checkPoint/:checkPointId/position',
+mapRouter.put('/:mapId/checkPoint/:checkPointId/position',
     setMap,
     catchAsync(async (req: Request, res: Response) => {
       const checkPoint: CheckPoint = await findCheckPointByIdWithThrow(

@@ -1,7 +1,5 @@
 import mongoose, {Schema, Document} from 'mongoose';
 import {
-  AssetSub,
-  AssetSubSchema,
   MapSub,
   MapSubSchema,
 } from './_sub.model';
@@ -9,7 +7,6 @@ import {
 export interface CheckPoint extends Document {
     name: string;
     macAddress: string;
-    asset?: AssetSub;
     map?: MapSub;
     x?: number;
     y?: number;
@@ -27,9 +24,6 @@ const CheckPointSchema: Schema = new Schema({
     unique: true,
     required: true,
     trim: true,
-  },
-  asset: {
-    type: AssetSubSchema,
   },
   map: {
     type: MapSubSchema,

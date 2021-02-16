@@ -1,7 +1,5 @@
 import mongoose, {Schema, Document} from 'mongoose';
 import {
-  CheckPointSub,
-  CheckPointSubSchema,
   MapSub,
   MapSubSchema,
 } from './_sub.model';
@@ -9,7 +7,6 @@ import {
 export interface Asset extends Document{
     name: string;
     maps: MapSub[];
-    checkPoints: CheckPointSub[];
 }
 
 const AssetSchema: Schema = new Schema({
@@ -22,11 +19,7 @@ const AssetSchema: Schema = new Schema({
   maps: {
     type: [MapSubSchema],
     default: [],
-  },
-  checkPoints: {
-    type: [CheckPointSubSchema],
-    default: [],
-  },
+  }
 });
 
 export default mongoose.model<Asset>('Asset', AssetSchema);

@@ -32,7 +32,8 @@ export async function findMaps() {
  * @param {string} assetId
  * @return {Promise<Map[]>}
  */
-export async function findMapsByAsset(assetId: string) {
+export async function findMapsByAsset(
+    assetId: string) {
   return MapDoc.find({'asset._id': assetId})
       .select({
         _id: 1,
@@ -63,6 +64,18 @@ export async function findMapById(id: string) {
 }
 
 /**
+ * Get a Map by id with throw
+ * Throw notFound error if map not exists
+ * @param {string} id
+ * @return {Promise<Map>}
+ */
+export async function findMapByIdWithThrow(id: string) {
+  const map: Map | null = await findMapById(id);
+  if (! map) throw new AppError('error.notFound.map', 404);
+  return map;
+}
+
+/**
  * Get Map by id and asset
  * @param {string} id
  * @param {string} assetId
@@ -81,18 +94,6 @@ export async function findMapByIdAndAssetId(id: string, assetId: string) {
         meterMarkers: 1,
       })
       .lean<Map>();
-}
-
-/**
- * Get a Map by id with throw
- * Throw notFound error if map not exists
- * @param {string} id
- * @return {Promise<Map>}
- */
-export async function findMapByIdWithThrow(id: string) {
-  const map: Map | null = await findMapById(id);
-  if (! map) throw new AppError('error.notFound.map', 404);
-  return map;
 }
 
 /**

@@ -48,7 +48,6 @@ describe('Map CheckPoint API', () => {
     expect(checkPointUpdated!._id).toBeTruthy();
     expect(checkPointUpdated!.name).toBeTruthy();
     expect(checkPointUpdated!.macAddress).toBeTruthy();
-    expect(checkPointUpdated!.asset).toBeTruthy();
     expect(checkPointUpdated!.map).toBeTruthy();
     expect(checkPointUpdated!.x).toStrictEqual(1001);
     expect(checkPointUpdated!.y).toStrictEqual(901);

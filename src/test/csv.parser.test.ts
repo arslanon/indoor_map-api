@@ -5,7 +5,7 @@ import {CheckPoint} from '../models/check-point.model';
 describe('CSV File Parsing', () => {
   it('Parse an csv data', async (done) => {
     expect(fs.existsSync(`files/checkpoints.csv`)).toBeTruthy();
-    await fs.copyFile(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`, () => {});
+    fs.copyFileSync(`files/checkpoints.csv`, `tmp/uploads/checkpoints.csv`);
     const res = await csvParser<CheckPoint>(`tmp/uploads/checkpoints.csv`);
 
     expect(res).toHaveLength(3);

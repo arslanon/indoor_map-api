@@ -36,7 +36,7 @@ describe('Map CRUD API / Image Layer Parsing', () => {
     done();
   });
 
-  it('POST /api/map - create map and whether asset maps update also', async (done) => {
+  it('POST /api/map - create a map', async (done) => {
     const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
     expect(asset).toBeTruthy();
 
@@ -75,32 +75,18 @@ describe('Map CRUD API / Image Layer Parsing', () => {
     const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
     expect(asset).toBeTruthy();
 
-    const res: Response = await request
+    await request
         .post('/api/map')
         .field({
           name: 'TestMap1',
           assetId: asset!._id.toString(),
-        });
-
-    expect(res.status).toBe(200);
-    const map: Map = res.body;
-
-    expect(map._id).toBeTruthy();
-    expect(map.name).toStrictEqual('TestMap1');
-    expect(map.path).not.toBeTruthy();
-    expect(map.width).not.toBeTruthy();
-    expect(map.height).not.toBeTruthy();
-    expect(map.maxZoom).not.toBeTruthy();
-    expect(map.checkPoints).toHaveLength(0);
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.maps.filter((m) => m.name === map.name)).toHaveLength(1);
+        })
+        .expect(404);
 
     done();
   });
 
-  it('PUT /api/map/:id - update a map and whether asset maps update also', async (done) => {
+  it('PUT /api/map/:id - update a map name, imagePath, and asset', async (done) => {
     const map1: Map | null = await MapDoc.findOne({name: 'Map1'});
     expect(map1).toBeTruthy();
 
@@ -146,7 +132,7 @@ describe('Map CRUD API / Image Layer Parsing', () => {
     done();
   });
 
-  it('DELETE /api/map/:id - delete a map and whether asset maps update also', async (done) => {
+  it('DELETE /api/map/:id - delete a map', async (done) => {
     const map = await MapDoc.findOne({name: 'Map1'});
     expect(map).toBeTruthy();
 
