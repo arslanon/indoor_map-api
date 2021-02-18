@@ -42,7 +42,7 @@ export async function findAssetById(id: string) {
  */
 export async function findAssetByIdWithThrow(id: string) {
   const asset: Asset | null = await findAssetById(id);
-  if (! asset) throw new AppError('error.notFound.asset', 404);
+  if (! asset) throw new AppError('error.notFound.asset', 404, true);
   return asset;
 }
 
@@ -71,7 +71,7 @@ export async function updateAsset(asset: Asset, name: string) {
       {new: true},
   ).lean<Asset>();
 
-  if (! assetUpdated) throw new AppError('error.notFound.asset', 404);
+  if (! assetUpdated) throw new AppError('error.notFound.asset', 404, true);
 
   await updateAssetOfMaps(asset.maps || [], assetUpdated);
 
@@ -87,7 +87,7 @@ export async function deleteAsset(id: string) {
   const asset: Asset = await findAssetByIdWithThrow(id);
 
   if (asset.maps.length > 0) {
-    throw new AppError('error.delete.asset.mapsExists', 400);
+    throw new AppError('error..delete.asset_map_exists', 400, true);
   }
 
   // await updateAssetOfMaps(asset.maps || [], undefined);

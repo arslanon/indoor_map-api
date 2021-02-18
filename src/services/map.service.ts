@@ -37,8 +37,7 @@ export async function findMapsByAsset(
   return MapDoc.find({'asset._id': assetId})
       .select({
         _id: 1,
-        name: 1,
-        asset: 1,
+        name: 1
       })
       .lean<Map[]>();
 }
@@ -58,6 +57,7 @@ export async function findMapById(id: string) {
         width: 1,
         height: 1,
         maxZoom: 1,
+        ratio: 1,
         checkPoints: 1,
       })
       .lean<Map>();
@@ -71,7 +71,7 @@ export async function findMapById(id: string) {
  */
 export async function findMapByIdWithThrow(id: string) {
   const map: Map | null = await findMapById(id);
-  if (! map) throw new AppError('error.notFound.map', 404);
+  if (! map) throw new AppError('error.notFound.map', 404, true);
   return map;
 }
 
@@ -91,6 +91,7 @@ export async function findMapByIdAndAssetId(id: string, assetId: string) {
         width: 1,
         height: 1,
         maxZoom: 1,
+        ratio: 1,
         meterMarkers: 1,
       })
       .lean<Map>();
@@ -107,7 +108,7 @@ export async function findMapByIdAndAssetIdWithThrow(
     id: string,
     assetId: string) {
   const map: Map | null = await findMapByIdAndAssetId(id, assetId);
-  if (! map) throw new AppError('error.notFound.map', 404);
+  if (! map) throw new AppError('error.notFound.map', 404, true);
   return map;
 }
 
@@ -142,7 +143,6 @@ export async function createMap(
  * Update a Map
  * After update, update maps of asset (remove, add or update)
  * After update, update map of checkPoints (update)
- * TODO If updated asset is not match checkPoints.asset in map
  * TODO Need transaction
  * @param {Map} map
  * @param {string} name
@@ -175,7 +175,7 @@ export async function updateMap(
   ).lean<Map>();
 
   if (! mapUpdated) {
-    throw new AppError('error.notFound.map', 404);
+    throw new AppError('error.notFound.map', 404, true);
   }
 
   if (map.asset) {
@@ -199,6 +199,24 @@ export async function updateMap(
 }
 
 /**
+ * Set a Map ratio
+ * @param {Map} map
+ * @param {number} ratio
+ * @return {Promise<Map>}
+ */
+export async function setMapRatio(
+    map: Map,
+    ratio: number) {
+  return MapDoc.findOneAndUpdate(
+      {_id: map._id},
+      {
+        ratio
+      },
+      {new: true}
+  ).lean<Map>();
+}
+
+/**
  * Delete a Map if map includes any checkPoints
  * Before delete, update maps of asset (remove)
  * TODO Need transaction
@@ -209,7 +227,7 @@ export async function deleteMap(id: string) {
   const map: Map = await findMapByIdWithThrow(id);
 
   if (map.checkPoints.length > 0) {
-    throw new AppError('error.delete.map.checkpointsExists', 400);
+    throw new AppError('error.delete.map_chokePoint_exists', 400, true);
   }
 
   // TODO Image path needs to be deleted if exists

@@ -73,7 +73,7 @@ export async function findCheckPointById(
 export async function findCheckPointByIdWithThrow(
     id: string) {
   const checkPoint = await findCheckPointById(id);
-  if (! checkPoint) throw new AppError('error.notFound.checkPoint', 404);
+  if (! checkPoint) throw new AppError('error.notFound.checkPoint', 404, true);
   return checkPoint;
 }
 
@@ -149,7 +149,7 @@ export async function updateCheckPoint(
     ).lean<CheckPoint>();
 
   if (! checkPointUpdated) {
-    throw new AppError('error.notFound.checkPoint', 404);
+    throw new AppError('error.notFound.checkPoint', 404, true);
   }
 
   if (checkPoint.map) {
@@ -243,7 +243,7 @@ export async function setCheckPointMap(
   const map: Map = await findMapByIdWithThrow(mapId);
 
   if (! (map && x && y)) {
-    throw new AppError('error.notFound.checkPoint.missingField', 401);
+    throw new AppError('error.missing_parameter.chokePoint_set_map', 401, true);
   }
 
   const checkPointUpdated: CheckPoint | null = await CheckPointDoc.findOneAndUpdate(
@@ -257,7 +257,7 @@ export async function setCheckPointMap(
   ).lean<CheckPoint>();
 
   if (! checkPointUpdated) {
-    throw new AppError('error.notFound.checkPoint', 404);
+    throw new AppError('error.notFound.checkPoint', 404, true);
   }
 
   if (checkPoint.map) {
@@ -310,7 +310,7 @@ export async function unsetCheckPointMap(
   ).lean<CheckPoint>();
 
   if (! checkPointUpdated) {
-    throw new AppError('error.notFound.checkPoint', 404);
+    throw new AppError('error.notFound.checkPoint', 404, true);
   }
 
   if (checkPoint.map) {

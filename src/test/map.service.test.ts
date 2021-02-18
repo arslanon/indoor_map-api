@@ -12,6 +12,7 @@ import {
   findMapByIdAndAssetIdWithThrow,
   createMap,
   updateMap,
+  setMapRatio,
   deleteMap,
 } from '../services';
 import fs from 'fs';
@@ -45,6 +46,7 @@ describe('Map CRUD Service', () => {
     done();
   });
 
+  // noinspection DuplicatedCode
   it('Find a map by id', async (done) => {
     const map: Map | null = await MapDoc.findOne({name: 'Map1'});
     expect(map).toBeTruthy();
@@ -69,6 +71,7 @@ describe('Map CRUD Service', () => {
     done();
   });
 
+  // noinspection DuplicatedCode
   it('Find maps by id and asset', async (done) => {
     const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
     expect(asset).toBeTruthy();
@@ -286,6 +289,22 @@ describe('Map CRUD Service', () => {
     expect(checkPointUpdated!.map!.name).toStrictEqual(mapUpdated.name);
 
     await fs.rmdirSync(`uploads/maps/${map!._id}`, {recursive: true});
+
+    done();
+  });
+
+  // noinspection DuplicatedCode
+  it('Set a map ratio', async (done) => {
+    const map: Map | null = await MapDoc.findOne({name: 'Map1'});
+    expect(map).toBeTruthy();
+
+    const mapUpdated: Map = await setMapRatio(
+      map!,
+      0.34
+    );
+
+    expect(mapUpdated).toBeTruthy();
+    expect(mapUpdated.ratio).toStrictEqual(0.34);
 
     done();
   });

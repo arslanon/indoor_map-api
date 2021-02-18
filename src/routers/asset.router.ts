@@ -28,7 +28,7 @@ assetRouter.get('',
 /**
  * Create an Asset
  * After create, update asset maps (add)
- * // TODO Field controls
+ * TODO Field controls
  * @return {Asset}
  */
 assetRouter.post('',
@@ -52,7 +52,7 @@ assetRouter.get('/:assetId',
 /**
  * Update an Asset
  * After update, update asset of maps (update)
- * // TODO Field controls
+ * TODO Field controls
  * @return {Asset}
  */
 assetRouter.put('/:assetId',

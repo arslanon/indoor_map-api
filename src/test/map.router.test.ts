@@ -86,6 +86,7 @@ describe('Map CRUD API / Image Layer Parsing', () => {
     done();
   });
 
+  // noinspection DuplicatedCode
   it('PUT /api/map/:id - update a map name, imagePath, and asset', async (done) => {
     const map1: Map | null = await MapDoc.findOne({name: 'Map1'});
     expect(map1).toBeTruthy();
@@ -128,6 +129,25 @@ describe('Map CRUD API / Image Layer Parsing', () => {
     expect(asset2Updated!.maps.filter((m) => m.name === map1Updated.name)).toHaveLength(1);
 
     await fs.rmdirSync(`uploads/maps/${res.body._id}`, {recursive: true});
+
+    done();
+  });
+
+  it('PUT /api/map/:id - update a map ratio', async (done) => {
+    const map1: Map | null = await MapDoc.findOne({name: 'Map1'});
+    expect(map1).toBeTruthy();
+
+    const res: Response = await request
+        .put(`/api/map/${map1!._id}/ratio`)
+        .send({
+          ratio: 0.5647345
+        });
+
+    expect(res.status).toBe(200);
+    const map1Updated: Map = res.body;
+
+    expect(map1Updated._id.toString()).toStrictEqual(map1!._id.toString());
+    expect(map1Updated.ratio).toStrictEqual(0.5647345);
 
     done();
   });

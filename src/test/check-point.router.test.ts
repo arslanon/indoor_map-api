@@ -63,6 +63,7 @@ describe('CheckPoint CRUD API', () => {
     done();
   });
 
+  // noinspection DuplicatedCode
   it('POST /api/checkPoint/:id/map - set a checkPoint map', async (done) => {
     const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
     expect(checkPoint).toBeTruthy();
@@ -102,6 +103,7 @@ describe('CheckPoint CRUD API', () => {
     done();
   });
 
+  // noinspection DuplicatedCode
   it('POST /api/checkPoint/:id/unmap - unset a checkPoint map', async (done) => {
     const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
     expect(checkPoint).toBeTruthy();

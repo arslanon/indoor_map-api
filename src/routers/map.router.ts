@@ -8,13 +8,13 @@ import {
   findMaps,
   createMap,
   updateMap,
+  setMapRatio,
   deleteMap,
   findCheckPointsByMap,
-  findCheckPointByIdWithThrow,
   updateCheckPointPosition,
 } from '../services';
 import {setMap} from '../middlewares/map.middleware';
-import {CheckPoint} from '../models/check-point.model';
+import {setCheckPoint} from '../middlewares/check-point.middleware';
 const {uploadSingleImage} = require('../middlewares/upload.middleware');
 
 // eslint-disable-next-line new-cap
@@ -34,14 +34,14 @@ mapRouter.get('',
  * Create a Map
  * If image exists, update after image parsing
  * After create, update asset maps (add)
- * // TODO Field controls
+ * TODO Field controls
  * @return {Map}
  */
 mapRouter.post('',
     uploadSingleImage,
     catchAsync(async (req: Request, res: Response) => {
       if (! req.file) {
-        throw new AppError('error.notFound.map.image', 404);
+        throw new AppError('error.missing_parameter.image', 404, true);
       }
       const {name, assetId} = req.body;
       return res.status(200).json(
@@ -65,7 +65,7 @@ mapRouter.get('/:mapId',
  * Update a Map
  * After update, update maps in asset (remove, add or update)
  * After update, update map of checkPoints (update)
- * // TODO Field controls
+ * TODO Field controls
  * @return {Map}
  */
 mapRouter.put('/:mapId',
@@ -80,6 +80,24 @@ mapRouter.put('/:mapId',
             assetId,
             req.file ? req.file.path : undefined,
           ),
+      );
+    }),
+);
+
+/**
+ * Set a Map ratio
+ * TODO Field controls
+ * @return {Map}
+ */
+mapRouter.put('/:mapId/ratio',
+    setMap,
+    catchAsync(async (req: Request, res: Response) => {
+      const {ratio} = req.body;
+      return res.status(200).json(
+          await setMapRatio(
+            req.map!,
+            ratio
+          )
       );
     }),
 );
@@ -110,35 +128,29 @@ mapRouter.get('/:mapId/checkPoint',
 /**
  * Update a Map checkPoint position
  * If checkpoint map and request map is not match throw error
- * If map is not mapped throw error
  * If given positions do not fit into map, throw error
- * After update, update asset maps (remove, add or update)
- * // TODO Field controls
+ * TODO Field controls
  * @return {Map}
  */
 mapRouter.put('/:mapId/checkPoint/:checkPointId/position',
     setMap,
+    setCheckPoint,
     catchAsync(async (req: Request, res: Response) => {
-      const checkPoint: CheckPoint = await findCheckPointByIdWithThrow(
-          req.params.checkPointId,
-      );
-
-      if (!checkPoint.map || !checkPoint.map._id.equals(req.map?._id)) {
-        throw new AppError('error.notFound.checkPoint', 404);
-      }
-
-      if (! req.map?.width || ! req.map?.height) {
-        throw new AppError('error.notMapped.map', 422);
+      // eslint-disable-next-line max-len
+      if (! (req.map && req.checkPoint && req.checkPoint.map && req.checkPoint.map._id.equals(req.map._id))) {
+        throw new AppError('error.notFound.checkPoint', 404, true);
       }
 
       const {x, y} = req.body;
 
-      if (x < 0 || y < 0 || x > req.map.width || y > req.map.height) {
-        throw new AppError('error.positionNotFit.map', 422);
+      if (!req.map.width || !req.map.height ||
+        x < 0 || y < 0 ||
+        x > req.map.width || y > req.map.height) {
+        throw new AppError('error.unprocessable_entity.map_position_not_fit', 422, true);
       }
 
       return res.status(200).json(await updateCheckPointPosition(
-          checkPoint._id,
+          req.checkPoint._id,
           x,
           y,
       ));

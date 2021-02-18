@@ -40,7 +40,7 @@ export default async function(
   const originalHeight = metadata.height;
 
   if (!originalWidth || !originalHeight) {
-    throw new AppError('error.unprocessableEntity.imageTile', 404);
+    throw new AppError('error.unprocessable_entity.map_image_tile', 404, true);
   }
 
   // Calculate how much zoom is required for a default tile size (256)

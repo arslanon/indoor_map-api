@@ -39,7 +39,7 @@ checkPointRouter.get('/:checkPointId',
 
 /**
  * Create CheckPoints via CSV
- * // TODO Field controls
+ * TODO Field controls
  * @return {CheckPoint[]}
  */
 checkPointRouter.post('/csv',
@@ -53,7 +53,7 @@ checkPointRouter.post('/csv',
 
 /**
  * Set a CheckPoint map
- * // TODO Field controls
+ * TODO Field controls
  * @return {CheckPoint}
  */
 checkPointRouter.post('/:checkPointId/map',
@@ -81,7 +81,7 @@ checkPointRouter.post('/:checkPointId/unmap',
 
 /**
  * Update a CheckPoint position
- * // TODO Field controls
+ * TODO Field controls
  * @return {CheckPoint}
  */
 checkPointRouter.put('/:checkPointId/position',

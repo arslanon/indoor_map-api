@@ -1,6 +1,7 @@
 import AppError from './models/app-error.model';
 import {Request, Response, NextFunction} from 'express';
 import {
+  handleInvalidIdError,
   handleCastError,
   handleDuplicateFieldsError,
   handleValidationError,
@@ -10,9 +11,10 @@ import logger from '../logger';
 /**
  * Return error model for dev environment
  * @param {AppError} err
+ * @param {Request} req
  * @param {Response} res
  */
-const sendErrorDev = (err: AppError, res: Response) => {
+const sendErrorDev = (err: AppError, req: Request, res: Response) => {
   res.status(err.statusCode).json({
     status: err.status,
     time: new Date(),
@@ -25,9 +27,10 @@ const sendErrorDev = (err: AppError, res: Response) => {
 /**
  * Return error model for prod environment
  * @param {AppError} err
+ * @param {Request} req
  * @param {Response} res
  */
-const sendErrorProd = (err: AppError, res: Response) => {
+const sendErrorProd = (err: AppError, req: Request, res: Response) => {
   if (err.isOperational) {
     res.status(err.statusCode).json({
       status: err.status,
@@ -40,11 +43,12 @@ const sendErrorProd = (err: AppError, res: Response) => {
     res.status(500).json({
       status: 'error',
       time: new Date(),
-      message: 'error.bad_request',
+      message: req.t('error.general.bad_request')
     });
   }
 };
 
+/* eslint-disable max-len */
 /**
  * Error handler
  * @param {AppError} err
@@ -59,19 +63,23 @@ export default function(
     next: NextFunction) {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
-  if (process.env.NODE_ENV === 'dev') {
-    sendErrorDev(err, res);
-  } else if (process.env.NODE_ENV === 'prod') {
+
+  if (process.env.NODE_ENV === 'prod') {
     let error = {...err};
-    error.message = err.needTranslate ? err.message : err.message;
+    error.message = err.message;
     error.name = err.name;
-    if (error.name === 'CastError') {
-      error = handleCastError(error, res);
-    } else if (error.name === 'MongoError' && error.code === 11000) {
-      error = handleDuplicateFieldsError(error, res);
-    } else if (error.name === 'ValidationError') {
-      error = handleValidationError(error, res);
+
+    if (error.kind === 'ObjectId') error = handleInvalidIdError(error, req);
+    else if (error.name === 'CastError') error = handleCastError(error, req);
+    else if (error.name === 'MongoError' && error.code === 11000) error = handleDuplicateFieldsError(error, req);
+    else if (error.name === 'ValidationError') error = handleValidationError(error, req);
+    else if (error._message && error._message.includes('validation')) error = handleValidationError(error, req);
+    else {
+      if (error.needTranslate) error.message = req.t(error.message, error.translateObject);
     }
-    sendErrorProd(error, res);
+
+    sendErrorProd(error, req, res);
+  } else {
+    sendErrorDev(err, req, res);
   }
 };
