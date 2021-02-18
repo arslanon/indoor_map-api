@@ -2,7 +2,7 @@
 const port = process.env.PORT || 3000;
 
 import mongodb from './shared/mongodb';
-mongodb('mongodb://onura:test@localhost/indoorMap');
+mongodb(process.env.MONGO_URI || 'mongodb://onura:test@localhost/indoorMap');
 
 import app from './app';
 

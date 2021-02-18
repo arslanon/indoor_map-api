@@ -13,6 +13,7 @@ export interface Map extends Document {
     width?: number;
     height?: number;
     maxZoom?: number;
+    ratio?: number;
     checkPoints: CheckPointSub[];
 }
 
@@ -37,6 +38,9 @@ const MapSchema: Schema = new Schema({
     type: Number,
   },
   maxZoom: {
+    type: Number,
+  },
+  ratio: {
     type: Number,
   },
   checkPoints: {

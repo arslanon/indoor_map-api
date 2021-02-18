@@ -2,17 +2,18 @@
 import setupTestDatabase from '../shared/db-test-setup';
 import AssetDoc, {Asset} from '../models/asset.model';
 import MapDoc, {Map} from '../models/map.model';
-import CheckPointDoc, {CheckPoint} from '../models/check-point.model';
 import {
   findAssets,
   findAssetById,
+  findAssetByIdWithThrow,
   createAsset,
   updateAsset,
   deleteAsset,
-} from './asset.service';
+} from '../services';
+import mongoose from 'mongoose';
 
 describe('Asset CRUD Service', () => {
-  setupTestDatabase('indoorMap-testDb-asset', ['checkPoint']);
+  setupTestDatabase('indoorMap-testDb-asset', ['map']);
 
   jest.setTimeout(50000);
 
@@ -27,7 +28,7 @@ describe('Asset CRUD Service', () => {
     done();
   });
 
-  it('Find an asset', async (done) => {
+  it('Find an asset by id', async (done) => {
     const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
     expect(asset).toBeTruthy();
 
@@ -37,7 +38,15 @@ describe('Asset CRUD Service', () => {
     expect(assetFound!._id).toBeTruthy();
     expect(assetFound!.name).toStrictEqual('Asset1');
     expect(assetFound!.maps).toHaveLength(1);
-    expect(assetFound!.checkPoints).toHaveLength(1);
+
+    done();
+  });
+
+  it('Find an asset by id throws', async (done) => {
+    await expect(findAssetByIdWithThrow(new mongoose.Types.ObjectId().toHexString()))
+        .rejects.toThrow();
+    await expect(findAssetByIdWithThrow(new mongoose.Types.ObjectId().toHexString()))
+        .rejects.toThrowError('error.notFound.asset');
 
     done();
   });
@@ -55,7 +64,6 @@ describe('Asset CRUD Service', () => {
     expect(asset._id).toBeTruthy();
     expect(asset.name).toStrictEqual('TestAsset1');
     expect(asset.maps).toHaveLength(0);
-    expect(asset.checkPoints).toHaveLength(0);
 
     done();
   });
@@ -83,11 +91,6 @@ describe('Asset CRUD Service', () => {
     expect(map!.asset).toBeTruthy();
     expect(map!.asset!.name).toStrictEqual(assetUpdated!.name);
 
-    const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
-    expect(checkPoint).toBeTruthy();
-    expect(checkPoint!.asset).toBeTruthy();
-    expect(checkPoint!.asset!.name).toStrictEqual(assetUpdated!.name);
-
     done();
   });
 
@@ -103,23 +106,17 @@ describe('Asset CRUD Service', () => {
     expect(map).toBeTruthy();
     expect(map!.asset).toBeTruthy();
 
-    const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
-    expect(checkPoint).toBeTruthy();
-    expect(checkPoint!.asset).toBeTruthy();
-
     await expect(deleteAsset(map!._id)).rejects.toThrow();
 
     await AssetDoc.findOneAndUpdate(
         {_id: asset!._id},
         {
           $pull: {
-            maps: {_id: map!._id},
-            checkPoints: {_id: checkPoint!._id},
+            maps: {_id: map!._id}
           },
         },
     );
     await MapDoc.deleteOne({_id: map!._id});
-    await CheckPointDoc.deleteOne({_id: checkPoint!._id});
 
     const res: any = await deleteAsset(asset!._id);
     expect(res).toBeTruthy();
@@ -130,9 +127,6 @@ describe('Asset CRUD Service', () => {
 
     const mapUpdated: Map | null = await MapDoc.findOne({name: 'Map1'});
     expect(mapUpdated).not.toBeTruthy();
-
-    const checkPointUpdated: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
-    expect(checkPointUpdated).not.toBeTruthy();
 
     done();
   });

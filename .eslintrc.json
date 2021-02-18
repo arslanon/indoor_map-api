@@ -15,5 +15,8 @@
         "@typescript-eslint"
     ],
     "rules": {
+        "linebreak-style": ["error", "windows"],
+        "comma-dangle": "off",
+        "max-len": ["error", { "code": 100 }]
     }
 }

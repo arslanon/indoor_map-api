@@ -5,12 +5,18 @@ import MapDoc, {Map} from '../models/map.model';
 import CheckPointDoc, {CheckPoint} from '../models/check-point.model';
 import {
   findMaps,
+  findMapsByAsset,
   findMapById,
+  findMapByIdWithThrow,
+  findMapByIdAndAssetId,
+  findMapByIdAndAssetIdWithThrow,
   createMap,
   updateMap,
+  setMapRatio,
   deleteMap,
-} from './map.service';
+} from '../services';
 import fs from 'fs';
+import mongoose from 'mongoose';
 
 describe('Map CRUD Service', () => {
   setupTestDatabase('indoorMap-testDb-map', ['checkPoint']);
@@ -28,7 +34,20 @@ describe('Map CRUD Service', () => {
     done();
   });
 
-  it('Find a map', async (done) => {
+  it('Find maps by asset', async (done) => {
+    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
+    expect(asset).toBeTruthy();
+
+    const maps: Map[] = await findMapsByAsset(asset!._id);
+
+    expect(maps).toBeTruthy();
+    expect(maps).toHaveLength(1);
+
+    done();
+  });
+
+  // noinspection DuplicatedCode
+  it('Find a map by id', async (done) => {
     const map: Map | null = await MapDoc.findOne({name: 'Map1'});
     expect(map).toBeTruthy();
 
@@ -43,45 +62,68 @@ describe('Map CRUD Service', () => {
     done();
   });
 
-  // </editor-fold>
-
-  // <editor-fold desc="CREATE">
-
-  // noinspection DuplicatedCode
-  it('Create a map - Send name and asset', async (done) => {
-    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset).toBeTruthy();
-
-    const map: Map = await createMap(
-        'TestMap1',
-            asset!._id,
-    );
-
-    expect(map).toBeTruthy();
-    expect(map._id).toBeTruthy();
-    expect(map.name).toStrictEqual('TestMap1');
-    expect(map.asset).toBeTruthy();
-    expect(map.asset!._id).toStrictEqual(asset!._id);
-
-    const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(assetUpdated).toBeTruthy();
-    expect(assetUpdated!.maps).toBeTruthy();
-    expect(assetUpdated!.maps.filter((m) => m.name === 'TestMap1')).toHaveLength(1);
+  it('Find a map by id throws', async (done) => {
+    await expect(findMapByIdWithThrow(new mongoose.Types.ObjectId().toHexString()))
+        .rejects.toThrow();
+    await expect(findMapByIdWithThrow(new mongoose.Types.ObjectId().toHexString()))
+        .rejects.toThrowError('error.notFound.map');
 
     done();
   });
 
   // noinspection DuplicatedCode
-  it('Create a map - Send name, asset and filePath', async (done) => {
+  it('Find maps by id and asset', async (done) => {
     const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
     expect(asset).toBeTruthy();
 
-    await fs.copyFile(`images/ai.jpg`, `tmp/uploads/ai.jpg`, () => {});
+    const map: Map | null = await MapDoc.findOne({name: 'Map1'});
+    expect(map).toBeTruthy();
+
+    const mapFound: Map | null= await findMapByIdAndAssetId(map!._id, asset!._id);
+
+    expect(mapFound).toBeTruthy();
+    expect(mapFound!._id).toBeTruthy();
+    expect(mapFound!.name).toStrictEqual('Map1');
+    expect(mapFound!.asset).toBeTruthy();
+    expect(mapFound!.asset!._id).toBeTruthy();
+
+    const map2: Map | null = await MapDoc.findOne({name: 'Map2'});
+    expect(map2).toBeTruthy();
+
+    const mapFound2: Map | null = await findMapByIdAndAssetId(map2!._id, asset!._id);
+
+    expect(mapFound2).not.toBeTruthy();
+
+    done();
+  });
+
+  it('Find a map by id and asset throws', async (done) => {
+    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
+    expect(asset).toBeTruthy();
+
+    await expect(findMapByIdAndAssetIdWithThrow(new mongoose.Types.ObjectId().toHexString(), asset!._id))
+        .rejects.toThrow();
+    await expect(findMapByIdAndAssetIdWithThrow(new mongoose.Types.ObjectId().toHexString(), asset!._id))
+        .rejects.toThrowError('error.notFound.map');
+
+    done();
+  });
+
+  // </editor-fold>
+
+  // <editor-fold desc="CREATE">
+
+  // noinspection DuplicatedCode
+  it('Create a map with asset', async (done) => {
+    const asset: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
+    expect(asset).toBeTruthy();
+
+    fs.copyFileSync(`images/ai.jpg`, `tmp/uploads/ai.jpg`);
 
     const map: Map = await createMap(
         'TestMap1',
-            asset!._id,
-            `tmp/uploads/ai.jpg`,
+        `tmp/uploads/ai.jpg`,
+        asset!._id,
     );
 
     expect(map).toBeTruthy();
@@ -104,12 +146,11 @@ describe('Map CRUD Service', () => {
     done();
   });
 
-  it('Create a map - Send name and filePath', async (done) => {
-    await fs.copyFile(`images/ai.jpg`, `tmp/uploads/ai.jpg`, () => {});
+  it('Create a map without asset', async (done) => {
+    fs.copyFileSync(`images/ai.jpg`, `tmp/uploads/ai.jpg`);
 
     const map: Map = await createMap(
         'TestMap1',
-        undefined,
         `tmp/uploads/ai.jpg`,
     );
 
@@ -137,7 +178,40 @@ describe('Map CRUD Service', () => {
   // <editor-fold desc="UPDATE">
 
   // noinspection DuplicatedCode
-  it('Update a map - Send name and asset', async (done) => {
+  it('Update a map name (delete asset)', async (done) => {
+    const map: Map | null = await MapDoc.findOne({name: 'Map1'});
+    expect(map).toBeTruthy();
+
+    const mapUpdated: Map = await updateMap(
+      map!,
+      'TestMap11',
+    );
+
+    expect(mapUpdated).toBeTruthy();
+    expect(mapUpdated._id).toBeTruthy();
+    expect(mapUpdated.name).toStrictEqual('TestMap11');
+    expect(mapUpdated.asset).not.toBeTruthy();
+    expect(mapUpdated.path).toBeTruthy();
+    expect(mapUpdated.width).toBeTruthy();
+    expect(mapUpdated.height).toBeTruthy();
+    expect(mapUpdated.maxZoom).toBeTruthy();
+
+    const asset1Updated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
+    expect(asset1Updated).toBeTruthy();
+    expect(asset1Updated!.maps).toBeTruthy();
+    expect(asset1Updated!.maps.filter((m) => m.name === map!.name)).toHaveLength(0);
+    expect(asset1Updated!.maps.filter((m) => m.name === mapUpdated.name)).toHaveLength(0);
+
+    const checkPointUpdated: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
+    expect(checkPointUpdated).toBeTruthy();
+    expect(checkPointUpdated!.map).toBeTruthy();
+    expect(checkPointUpdated!.map!.name).toStrictEqual(mapUpdated.name);
+
+    done();
+  });
+
+  // noinspection DuplicatedCode
+  it('Update a map name and asset', async (done) => {
     const asset2: Asset | null = await AssetDoc.findOne({name: 'Asset2'});
     expect(asset2).toBeTruthy();
 
@@ -181,44 +255,11 @@ describe('Map CRUD Service', () => {
   });
 
   // noinspection DuplicatedCode
-  it('Update a map - Send name', async (done) => {
+  it('Update a map name and imagePath (delete asset)', async (done) => {
     const map: Map | null = await MapDoc.findOne({name: 'Map1'});
     expect(map).toBeTruthy();
 
-    const mapUpdated: Map = await updateMap(
-            map!,
-            'TestMap11',
-    );
-
-    expect(mapUpdated).toBeTruthy();
-    expect(mapUpdated._id).toBeTruthy();
-    expect(mapUpdated.name).toStrictEqual('TestMap11');
-    expect(mapUpdated.asset).not.toBeTruthy();
-    expect(mapUpdated.path).toBeTruthy();
-    expect(mapUpdated.width).toBeTruthy();
-    expect(mapUpdated.height).toBeTruthy();
-    expect(mapUpdated.maxZoom).toBeTruthy();
-
-    const asset1Updated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
-    expect(asset1Updated).toBeTruthy();
-    expect(asset1Updated!.maps).toBeTruthy();
-    expect(asset1Updated!.maps.filter((m) => m.name === map!.name)).toHaveLength(0);
-    expect(asset1Updated!.maps.filter((m) => m.name === mapUpdated.name)).toHaveLength(0);
-
-    const checkPointUpdated: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
-    expect(checkPointUpdated).toBeTruthy();
-    expect(checkPointUpdated!.map).toBeTruthy();
-    expect(checkPointUpdated!.map!.name).toStrictEqual(mapUpdated.name);
-
-    done();
-  });
-
-  // noinspection DuplicatedCode
-  it('Update a map - Send name and filePath', async (done) => {
-    const map: Map | null = await MapDoc.findOne({name: 'Map1'});
-    expect(map).toBeTruthy();
-
-    await fs.copyFile(`images/ai.jpg`, `tmp/uploads/ai.jpg`, () => {});
+    fs.copyFileSync(`images/ai.jpg`, `tmp/uploads/ai.jpg`);
 
     const mapUpdated: Map = await updateMap(
             map!,
@@ -235,7 +276,6 @@ describe('Map CRUD Service', () => {
     expect(mapUpdated.width).toBeTruthy();
     expect(mapUpdated.height).toBeTruthy();
     expect(mapUpdated.maxZoom).toBeTruthy();
-    expect(mapUpdated.checkPoints).toHaveLength(1);
 
     const asset1Updated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
     expect(asset1Updated).toBeTruthy();
@@ -249,6 +289,22 @@ describe('Map CRUD Service', () => {
     expect(checkPointUpdated!.map!.name).toStrictEqual(mapUpdated.name);
 
     await fs.rmdirSync(`uploads/maps/${map!._id}`, {recursive: true});
+
+    done();
+  });
+
+  // noinspection DuplicatedCode
+  it('Set a map ratio', async (done) => {
+    const map: Map | null = await MapDoc.findOne({name: 'Map1'});
+    expect(map).toBeTruthy();
+
+    const mapUpdated: Map = await setMapRatio(
+      map!,
+      0.34
+    );
+
+    expect(mapUpdated).toBeTruthy();
+    expect(mapUpdated.ratio).toStrictEqual(0.34);
 
     done();
   });
@@ -269,7 +325,7 @@ describe('Map CRUD Service', () => {
     expect(checkPoint).toBeTruthy();
     expect(checkPoint!.map).toBeTruthy();
 
-    await expect(deleteMap(map!._id)).rejects.toThrow();
+    await expect(deleteMap(map!._id)).rejects.toThrowError('error.delete.map.checkpointsExists');
 
     await MapDoc.findOneAndUpdate({_id: map!._id}, {$pull: {checkPoints: {_id: checkPoint!._id}}});
     await CheckPointDoc.deleteOne({_id: checkPoint!._id});

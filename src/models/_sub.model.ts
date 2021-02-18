@@ -11,6 +11,7 @@ export interface MapSub extends Document {
 
 export interface CheckPointSub extends Document {
     name: string;
+    macAddress: string;
     x?: number;
     y?: number;
 }

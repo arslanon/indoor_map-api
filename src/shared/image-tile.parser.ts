@@ -7,7 +7,7 @@ import {AppError} from '../common/error';
 // To delete temp file after used
 const unlinkAsync = promisify(fs.unlink);
 
-const rootPath = `./uploads/maps`;
+const rootPath = `/uploads/maps`;
 
 export interface TileParsedModel {
     path: string;
@@ -20,11 +20,12 @@ export interface TileParsedModel {
  * Parses an image file into tile grids
  * @param {string} imagePath
  * @param {string} folderName
+ * @return {Promise<TileParsedModel>}
  */
 export default async function(
     imagePath: string,
     folderName: string): Promise<TileParsedModel> {
-  const dir = `${rootPath}/${folderName}`;
+  const dir = `.${rootPath}/${folderName}`;
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, {recursive: true});
 
   // Copy image in upload folder specified with folderName as base.png
@@ -39,7 +40,7 @@ export default async function(
   const originalHeight = metadata.height;
 
   if (!originalWidth || !originalHeight) {
-    throw new AppError('error.unprocessableEntity.imageTile', 404);
+    throw new AppError('error.unprocessable_entity.map_image_tile', 404, true);
   }
 
   // Calculate how much zoom is required for a default tile size (256)
