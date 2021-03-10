@@ -4,49 +4,35 @@ import {
   AssetSubSchema,
   ChokePointSub,
   ChokePointSubSchema,
+  PositionSub,
+  PositionSubSchema,
 } from './_sub.model';
 
-export interface Map extends Document {
+export interface Location extends Document {
     name: string;
+    position: PositionSub;
     asset?: AssetSub;
-    path?: string;
-    width?: number;
-    height?: number;
-    maxZoom?: number;
-    ratio?: number;
     chokePoints: ChokePointSub[];
 }
 
-const MapSchema: Schema = new Schema({
+const LocationSchema: Schema = new Schema({
   name: {
     type: String,
     unique: true,
     required: true,
     trim: true,
   },
+  position: {
+    type: PositionSubSchema,
+    required: true,
+  },
   asset: {
     type: AssetSubSchema,
-  },
-  path: {
-    type: String,
-    trim: true,
-  },
-  width: {
-    type: Number,
-  },
-  height: {
-    type: Number,
-  },
-  maxZoom: {
-    type: Number,
-  },
-  ratio: {
-    type: Number,
   },
   chokePoints: {
     type: [ChokePointSubSchema],
     default: [],
-  },
+  }
 });
 
-export default mongoose.model<Map>('Map', MapSchema);
+export default mongoose.model<Location>('Location', LocationSchema);

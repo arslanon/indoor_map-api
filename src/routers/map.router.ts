@@ -10,11 +10,11 @@ import {
   updateMap,
   setMapRatio,
   deleteMap,
-  findCheckPointsByMap,
-  updateCheckPointPosition,
+  findChokePointsByMap,
+  updateChokePointPosition,
 } from '../services';
 import {setMap} from '../middlewares/map.middleware';
-import {setCheckPoint} from '../middlewares/check-point.middleware';
+import {setChokePoint} from '../middlewares/choke-point.middleware';
 const {uploadSingleImage} = require('../middlewares/upload.middleware');
 
 // eslint-disable-next-line new-cap
@@ -25,6 +25,20 @@ const mapRouter = Router();
  * @return {Map[]}
  */
 mapRouter.get('',
+    catchAsync(async (req: Request, res: Response) => {
+      const maps = await findMaps();
+      return res.status(200).json({
+        items: maps,
+        totalCount: maps.length
+      });
+    }),
+);
+
+/**
+ * Get all Maps
+ * @return {Map[]}
+ */
+mapRouter.get('/all',
     catchAsync(async (req: Request, res: Response) => {
       return res.status(200).json(await findMaps());
     }),
@@ -64,7 +78,7 @@ mapRouter.get('/:mapId',
 /**
  * Update a Map
  * After update, update maps in asset (remove, add or update)
- * After update, update map of checkPoints (update)
+ * After update, update map of chokePoints (update)
  * TODO Field controls
  * @return {Map}
  */
@@ -103,7 +117,7 @@ mapRouter.put('/:mapId/ratio',
 );
 
 /**
- * Delete a Map if map includes any checkPoints
+ * Delete a Map if map includes any chokePoints
  * Before delete, update maps of asset (remove)
  * @returns {Promise<{n, deletedCount, ok}>}
  */
@@ -115,30 +129,30 @@ mapRouter.delete('/:mapId',
 );
 
 /**
- * Get a Map CheckPoints by id
- * @return {CheckPoint[]}
+ * Get a Map ChokePoints by id
+ * @return {ChokePoint[]}
  */
-mapRouter.get('/:mapId/checkPoint',
+mapRouter.get('/:mapId/chokePoint',
     setMap,
     catchAsync(async (req: Request, res: Response) => {
-      return res.status(200).json(await findCheckPointsByMap(req.map!._id));
+      return res.status(200).json(await findChokePointsByMap(req.map!._id));
     }),
 );
 
 /**
- * Update a Map checkPoint position
- * If checkpoint map and request map is not match throw error
+ * Update a Map chokePoint position
+ * If chokepoint map and request map is not match throw error
  * If given positions do not fit into map, throw error
  * TODO Field controls
  * @return {Map}
  */
-mapRouter.put('/:mapId/checkPoint/:checkPointId/position',
+mapRouter.put('/:mapId/chokePoint/:chokePointId/position',
     setMap,
-    setCheckPoint,
+    setChokePoint,
     catchAsync(async (req: Request, res: Response) => {
       // eslint-disable-next-line max-len
-      if (! (req.map && req.checkPoint && req.checkPoint.map && req.checkPoint.map._id.equals(req.map._id))) {
-        throw new AppError('error.notFound.checkPoint', 404, true);
+      if (! (req.map && req.chokePoint && req.chokePoint.map && req.chokePoint.map._id.equals(req.map._id))) {
+        throw new AppError('error.notFound.chokePoint', 404, true);
       }
 
       const {x, y} = req.body;
@@ -149,8 +163,8 @@ mapRouter.put('/:mapId/checkPoint/:checkPointId/position',
         throw new AppError('error.unprocessable_entity.map_position_not_fit', 422, true);
       }
 
-      return res.status(200).json(await updateCheckPointPosition(
-          req.checkPoint._id,
+      return res.status(200).json(await updateChokePointPosition(
+          req.chokePoint._id,
           x,
           y,
       ));

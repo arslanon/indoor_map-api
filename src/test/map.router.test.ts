@@ -60,7 +60,7 @@ describe('Map CRUD API / Image Layer Parsing', () => {
     expect(map.width).toBeTruthy();
     expect(map.height).toBeTruthy();
     expect(map.maxZoom).toBeTruthy();
-    expect(map.checkPoints).toHaveLength(0);
+    expect(map.chokePoints).toHaveLength(0);
 
     await fs.rmdirSync(`uploads/maps/${map._id}`, {recursive: true});
 
@@ -114,7 +114,7 @@ describe('Map CRUD API / Image Layer Parsing', () => {
     expect(map1Updated.width).toBeTruthy();
     expect(map1Updated.height).toBeTruthy();
     expect(map1Updated.maxZoom).toBeTruthy();
-    expect(map1Updated.checkPoints).toHaveLength(0);
+    expect(map1Updated.chokePoints).toHaveLength(0);
     expect(map1Updated.asset).toBeTruthy();
     expect(map1Updated.asset!._id.toString()).toStrictEqual(asset2!._id.toString());
 

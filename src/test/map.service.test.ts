@@ -2,7 +2,7 @@
 import setupTestDatabase from '../shared/db-test-setup';
 import AssetDoc, {Asset} from '../models/asset.model';
 import MapDoc, {Map} from '../models/map.model';
-import CheckPointDoc, {CheckPoint} from '../models/check-point.model';
+import ChokePointDoc, {ChokePoint} from '../models/choke-point.model';
 import {
   findMaps,
   findMapsByAsset,
@@ -19,7 +19,7 @@ import fs from 'fs';
 import mongoose from 'mongoose';
 
 describe('Map CRUD Service', () => {
-  setupTestDatabase('indoorMap-testDb-map', ['checkPoint']);
+  setupTestDatabase('indoorMap-testDb-map', ['chokePoint']);
 
   jest.setTimeout(50000);
 
@@ -135,7 +135,7 @@ describe('Map CRUD Service', () => {
     expect(map.width).toBeTruthy();
     expect(map.height).toBeTruthy();
     expect(map.maxZoom).toBeTruthy();
-    expect(map.checkPoints).toHaveLength(0);
+    expect(map.chokePoints).toHaveLength(0);
 
     const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
     expect(assetUpdated).toBeTruthy();
@@ -162,7 +162,7 @@ describe('Map CRUD Service', () => {
     expect(map.width).toBeTruthy();
     expect(map.height).toBeTruthy();
     expect(map.maxZoom).toBeTruthy();
-    expect(map.checkPoints).toHaveLength(0);
+    expect(map.chokePoints).toHaveLength(0);
 
     const assetUpdated: Asset | null = await AssetDoc.findOne({name: 'Asset1'});
     expect(assetUpdated).toBeTruthy();
@@ -202,10 +202,10 @@ describe('Map CRUD Service', () => {
     expect(asset1Updated!.maps.filter((m) => m.name === map!.name)).toHaveLength(0);
     expect(asset1Updated!.maps.filter((m) => m.name === mapUpdated.name)).toHaveLength(0);
 
-    const checkPointUpdated: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
-    expect(checkPointUpdated).toBeTruthy();
-    expect(checkPointUpdated!.map).toBeTruthy();
-    expect(checkPointUpdated!.map!.name).toStrictEqual(mapUpdated.name);
+    const chokePointUpdated: ChokePoint | null = await ChokePointDoc.findOne({name: 'ChokePoint1'});
+    expect(chokePointUpdated).toBeTruthy();
+    expect(chokePointUpdated!.map).toBeTruthy();
+    expect(chokePointUpdated!.map!.name).toStrictEqual(mapUpdated.name);
 
     done();
   });
@@ -246,10 +246,10 @@ describe('Map CRUD Service', () => {
     expect(asset2Updated!.maps.filter((m) => m.name === map!.name)).toHaveLength(0);
     expect(asset2Updated!.maps.filter((m) => m.name === mapUpdated.name)).toHaveLength(1);
 
-    const checkPointUpdated: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
-    expect(checkPointUpdated).toBeTruthy();
-    expect(checkPointUpdated!.map).toBeTruthy();
-    expect(checkPointUpdated!.map!.name).toStrictEqual(mapUpdated.name);
+    const chokePointUpdated: ChokePoint | null = await ChokePointDoc.findOne({name: 'ChokePoint1'});
+    expect(chokePointUpdated).toBeTruthy();
+    expect(chokePointUpdated!.map).toBeTruthy();
+    expect(chokePointUpdated!.map!.name).toStrictEqual(mapUpdated.name);
 
     done();
   });
@@ -283,10 +283,10 @@ describe('Map CRUD Service', () => {
     expect(asset1Updated!.maps.filter((m) => m.name === map!.name)).toHaveLength(0);
     expect(asset1Updated!.maps.filter((m) => m.name === mapUpdated.name)).toHaveLength(0);
 
-    const checkPointUpdated: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
-    expect(checkPointUpdated).toBeTruthy();
-    expect(checkPointUpdated!.map).toBeTruthy();
-    expect(checkPointUpdated!.map!.name).toStrictEqual(mapUpdated.name);
+    const chokePointUpdated: ChokePoint | null = await ChokePointDoc.findOne({name: 'ChokePoint1'});
+    expect(chokePointUpdated).toBeTruthy();
+    expect(chokePointUpdated!.map).toBeTruthy();
+    expect(chokePointUpdated!.map!.name).toStrictEqual(mapUpdated.name);
 
     await fs.rmdirSync(`uploads/maps/${map!._id}`, {recursive: true});
 
@@ -321,14 +321,14 @@ describe('Map CRUD Service', () => {
     expect(asset).toBeTruthy();
     expect(asset!.maps.filter((m) => m.name === map!.name)).toHaveLength(1);
 
-    const checkPoint: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
-    expect(checkPoint).toBeTruthy();
-    expect(checkPoint!.map).toBeTruthy();
+    const chokePoint: ChokePoint | null = await ChokePointDoc.findOne({name: 'ChokePoint1'});
+    expect(chokePoint).toBeTruthy();
+    expect(chokePoint!.map).toBeTruthy();
 
-    await expect(deleteMap(map!._id)).rejects.toThrowError('error.delete.map.checkpointsExists');
+    await expect(deleteMap(map!._id)).rejects.toThrowError('error.delete.map_chokePoint_exists');
 
-    await MapDoc.findOneAndUpdate({_id: map!._id}, {$pull: {checkPoints: {_id: checkPoint!._id}}});
-    await CheckPointDoc.deleteOne({_id: checkPoint!._id});
+    await MapDoc.findOneAndUpdate({_id: map!._id}, {$pull: {chokePoints: {_id: chokePoint!._id}}});
+    await ChokePointDoc.deleteOne({_id: chokePoint!._id});
 
     const res: any = await deleteMap(map!._id);
     expect(res).toBeTruthy();
@@ -341,8 +341,8 @@ describe('Map CRUD Service', () => {
     expect(assetUpdated).toBeTruthy();
     expect(assetUpdated!.maps).toHaveLength(0);
 
-    const checkPointUpdated: CheckPoint | null = await CheckPointDoc.findOne({name: 'CheckPoint1'});
-    expect(checkPointUpdated).not.toBeTruthy();
+    const chokePointUpdated: ChokePoint | null = await ChokePointDoc.findOne({name: 'ChokePoint1'});
+    expect(chokePointUpdated).not.toBeTruthy();
 
     done();
   });

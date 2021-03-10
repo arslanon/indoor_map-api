@@ -4,7 +4,8 @@ declare namespace Express {
     export interface Request {
         asset?: import('./models/asset.model').Asset;
         map?: import('./models/map.model').Map;
-        checkPoint?: import('./models/check-point.model').CheckPoint;
+        location?: import('./models/location.model').Location;
+        chokePoint?: import('./models/choke-point.model').ChokePoint;
         language: string;
         languages: string[];
         i18n: import('i18next').i18n;

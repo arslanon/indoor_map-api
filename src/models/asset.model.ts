@@ -1,5 +1,7 @@
 import mongoose, {Schema, Document} from 'mongoose';
 import {
+  LocationSub,
+  LocationSubSchema,
   MapSub,
   MapSubSchema,
 } from './_sub.model';
@@ -7,6 +9,7 @@ import {
 export interface Asset extends Document{
     name: string;
     maps: MapSub[];
+    locations: LocationSub[];
 }
 
 const AssetSchema: Schema = new Schema({
@@ -18,6 +21,10 @@ const AssetSchema: Schema = new Schema({
   },
   maps: {
     type: [MapSubSchema],
+    default: [],
+  },
+  locations: {
+    type: [LocationSubSchema],
     default: [],
   }
 });

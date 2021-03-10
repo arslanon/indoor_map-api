@@ -1,7 +1,7 @@
 
 import {Asset} from '../models/asset.model';
 import MapDoc, {Map} from '../models/map.model';
-import {CheckPoint} from '../models/check-point.model';
+import {ChokePoint} from '../models/choke-point.model';
 import {AppError} from '../common/error';
 import imageTileParser from './../shared/image-tile.parser';
 import {MapSub} from '../models/_sub.model';
@@ -10,7 +10,7 @@ import {
   addMapIntoAsset,
   updateMapInAsset,
   removeMapFromAsset,
-  updateMapOfCheckPoints,
+  updateMapOfChokePoints,
 } from './';
 
 /**
@@ -22,7 +22,9 @@ export async function findMaps() {
       .select({
         _id: 1,
         name: 1,
+        path: 1,
         asset: 1,
+        chokePoints: 1
       })
       .lean<Map[]>();
 }
@@ -58,7 +60,7 @@ export async function findMapById(id: string) {
         height: 1,
         maxZoom: 1,
         ratio: 1,
-        checkPoints: 1,
+        chokePoints: 1,
       })
       .lean<Map>();
 }
@@ -92,7 +94,7 @@ export async function findMapByIdAndAssetId(id: string, assetId: string) {
         height: 1,
         maxZoom: 1,
         ratio: 1,
-        meterMarkers: 1,
+        chokePoints: 1,
       })
       .lean<Map>();
 }
@@ -142,7 +144,7 @@ export async function createMap(
 /**
  * Update a Map
  * After update, update maps of asset (remove, add or update)
- * After update, update map of checkPoints (update)
+ * After update, update map of chokePoints (update)
  * TODO Need transaction
  * @param {Map} map
  * @param {string} name
@@ -193,7 +195,7 @@ export async function updateMap(
     await addMapIntoAsset(mapUpdated.asset._id, mapUpdated);
   }
 
-  await updateMapOfCheckPoints(mapUpdated.checkPoints || [], mapUpdated);
+  await updateMapOfChokePoints(mapUpdated.chokePoints || [], mapUpdated);
 
   return mapUpdated;
 }
@@ -217,7 +219,7 @@ export async function setMapRatio(
 }
 
 /**
- * Delete a Map if map includes any checkPoints
+ * Delete a Map if map includes any chokePoints
  * Before delete, update maps of asset (remove)
  * TODO Need transaction
  * @param {string} id
@@ -226,7 +228,7 @@ export async function setMapRatio(
 export async function deleteMap(id: string) {
   const map: Map = await findMapByIdWithThrow(id);
 
-  if (map.checkPoints.length > 0) {
+  if (map.chokePoints.length > 0) {
     throw new AppError('error.delete.map_chokePoint_exists', 400, true);
   }
 
@@ -234,7 +236,7 @@ export async function deleteMap(id: string) {
 
   if (map.asset) await removeMapFromAsset(map.asset._id, map);
 
-  // await updateMapOfCheckPoints(map.checkPoints || [], undefined);
+  // await updateMapOfChokePoints(map.chokePoints || [], undefined);
 
   return MapDoc.deleteOne({_id: id});
 }
@@ -256,57 +258,57 @@ export async function updateAssetOfMaps(maps: MapSub[], asset?: Asset) {
 
 // </editor-fold>
 
-// <editor-fold desc="CheckPoint">
+// <editor-fold desc="ChokePoint">
 
 /**
- * Add checkPoint into map
- * => It pushes new checkPoint into map.checkPoints
+ * Add chokePoint into map
+ * => It pushes new chokePoint into map.chokePoints
  * @param {string} id
- * @param {CheckPoint} checkPoint
+ * @param {ChokePoint} chokePoint
  * @return {Promise<Map | null>}
  */
-export async function addCheckPointIntoMap(
+export async function addChokePointIntoMap(
     id: string,
-    checkPoint: CheckPoint) {
+    chokePoint: ChokePoint) {
   return MapDoc.findOneAndUpdate(
       {_id: id},
-      {$push: {checkPoints: checkPoint}},
+      {$push: {chokePoints: chokePoint}},
       {new: true},
   ).lean<Map>();
 }
 
 /**
- * Update checkPoint in map
- * => It updates a checkPoint in map.checkPoints
+ * Update chokePoint in map
+ * => It updates a chokePoint in map.chokePoints
  * @param {string} id
- * @param {CheckPoint} checkPoint
+ * @param {ChokePoint} chokePoint
  * @return {Promise<Map | null>}
  */
-export async function updateCheckPointInMap(
+export async function updateChokePointInMap(
     id: string,
-    checkPoint: CheckPoint) {
+    chokePoint: ChokePoint) {
   return MapDoc.findOneAndUpdate(
-      {'_id': id, 'checkPoints._id': checkPoint._id},
-      {'checkPoints.$': checkPoint},
+      {'_id': id, 'chokePoints._id': chokePoint._id},
+      {'chokePoints.$': chokePoint},
       {new: true},
   ).lean<Map>();
 }
 
 /**
- * Remove checkPoint from map
- * => It pulls a checkPoint from map.checkPoints
+ * Remove chokePoint from map
+ * => It pulls a chokePoint from map.chokePoints
  * @param {string} id
- * @param {CheckPoint} checkPoint
+ * @param {ChokePoint} chokePoint
  * @return {Promise<{n, nModified, ok}>}
  */
-export async function removeCheckPointFromMap(
+export async function removeChokePointFromMap(
     id: string,
-    checkPoint: CheckPoint) {
+    chokePoint: ChokePoint) {
   return MapDoc.updateMany(
       {_id: id},
       {
         $pull: {
-          checkPoints: {_id: checkPoint._id},
+          chokePoints: {_id: chokePoint._id},
         },
       },
   );

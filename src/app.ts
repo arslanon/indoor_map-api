@@ -5,6 +5,7 @@ import cors from 'cors';
 import i18next from 'i18next';
 import i18nextMiddleware from 'i18next-http-middleware';
 import i18nFsBackend from 'i18next-node-fs-backend';
+import {errorHandler} from './common/error';
 
 const app = express();
 
@@ -33,11 +34,14 @@ app.use(bodyParser.json());
 
 app.use(cors({
   origin: 'http://localhost:4200',
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  methods: 'GET,HEAD,PUT,PATCH,POST,OPTIONS,DELETE',
+  allowedHeaders: 'Content-Type, Authorization, Content-Length, X-Requested-With',
   preflightContinue: false,
   optionsSuccessStatus: 200,
 }));
 
 app.use(routes);
+
+app.use(errorHandler);
 
 export default app;

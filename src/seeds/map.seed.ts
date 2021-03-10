@@ -16,11 +16,11 @@ export default async function seed() {
 
   await MapDoc.insertMany([
     {name: 'Map1', asset: asset1 || undefined,
-      path: '/path1', width: 1921, height: 1081, maxZoom: 11, checkPoints: []},
+      path: '/path1', width: 1921, height: 1081, maxZoom: 11, chokePoints: []},
     {name: 'Map2', asset: asset2 || undefined,
-      path: '/path2', width: 1922, height: 1082, maxZoom: 12, checkPoints: []},
+      path: '/path2', width: 1922, height: 1082, maxZoom: 12, chokePoints: []},
     {name: 'Map3', asset: asset3 || undefined,
-      path: '/path3', width: 1923, height: 1083, maxZoom: 13, checkPoints: []},
+      path: '/path3', width: 1923, height: 1083, maxZoom: 13, chokePoints: []},
   ]);
 
   const maps: Map[] = await MapDoc.find();

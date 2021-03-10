@@ -1,6 +1,7 @@
 
 import AssetDoc, {Asset} from '../models/asset.model';
 import {Map} from '../models/map.model';
+import {Location} from '../models/location.model';
 import {AppError} from '../common/error';
 import {
   updateAssetOfMaps
@@ -140,6 +141,58 @@ export async function removeMapFromAsset(id: string, map: Map) {
       {
         $pull: {
           maps: {_id: map._id},
+        },
+      },
+  );
+}
+
+// </editor-fold>
+
+// <editor-fold desc="Location">
+
+/**
+ * Add location into assets
+ * It pushes new location into asset.locations
+ * @param {string} id
+ * @param {Location} location
+ * @return {Promise<Asset | null>}
+ */
+export async function addLocationIntoAsset(id: string, location: Location) {
+  return AssetDoc.findOneAndUpdate(
+      {_id: id},
+      {$push: {locations: location}},
+      {new: true},
+  ).lean<Asset>();
+}
+
+/**
+ * Update location in asset
+ * It updates a location in asset.locations
+ * @param {string} id
+ * @param {Location} location
+ * @return {Promise<Asset | null>}
+ */
+export async function updateLocationInAsset(id: string, location: Location) {
+  return AssetDoc.findOneAndUpdate(
+      {'_id': id, 'locations._id': location._id},
+      {'locations.$': location},
+      {new: true},
+  ).lean<Asset>();
+}
+
+/**
+ * Remove location from asset
+ * It pulls a location from asset.locations
+ * @param {string} id
+ * @param {Location} location
+ * @return {Promise<{n, nModified, ok}>}
+ */
+export async function removeLocationFromAsset(id: string, location: Location) {
+  return AssetDoc.updateMany(
+      {_id: id},
+      {
+        $pull: {
+          locations: {_id: location._id},
         },
       },
   );

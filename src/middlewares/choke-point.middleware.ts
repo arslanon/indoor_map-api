@@ -4,15 +4,15 @@ import {
   AppError,
 } from '../common/error';
 import {
-  findCheckPointById,
+  findChokePointById,
 } from '../services';
 import {Request, Response, NextFunction} from 'express';
 
-export const setCheckPoint = catchAsync(
+export const setChokePoint = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
-      req.checkPoint = await findCheckPointById(req.params.checkPointId) || undefined;
-      if (!req.checkPoint) {
-        return next(new AppError('error.notFound.checkPoint', 404));
+      req.chokePoint = await findChokePointById(req.params.chokePointId) || undefined;
+      if (!req.chokePoint) {
+        return next(new AppError('error.notFound.chokePoint', 404));
       }
       next();
     },
